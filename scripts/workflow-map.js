@@ -24,6 +24,16 @@
     var nodeButtons = {};
     var nodeData = {};
     var passages = [];
+    // Opt-in bridge for the IDE scene only. This map remains the state owner.
+    var sceneBridge = root.dataset.workflowMap === 'ide' && root.hasAttribute('data-ide-scene');
+
+    function publishState() {
+      if (!sceneBridge) return;
+      root.dispatchEvent(new CustomEvent('workflowmap:change', { detail: {
+        map: 'ide', node: state.route.steps[state.step], route: state.route.id,
+        step: state.step, view: state.view, playing: state.playing
+      } }));
+    }
 
     function sourceStages() {
       return Array.from(document.querySelectorAll('.workflow-section .pipeline > .stage'));
@@ -300,6 +310,7 @@
         ? 'Reduced motion is on. Use Previous and Next; timed playback is disabled.'
         : 'Play advances the illustration only. Nothing is run or changed.';
       queueDraw();
+      publishState();
     }
 
     function edgeState(edge) {
@@ -446,6 +457,9 @@
     app.querySelector('[data-map-action="locate"]').addEventListener('click', function () {
       stopPlayback();
       renderState();
+      if (sceneBridge && !root.dispatchEvent(new CustomEvent('workflowmap:locate', {
+        cancelable: true, detail: { node: selectedNode().id }
+      }))) return;
       focusAndScroll(nodeButtons[selectedNode().id]);
     });
     app.querySelector('[data-map-jump]').addEventListener('click', function (event) {
@@ -469,6 +483,22 @@
       Object.keys(nodeButtons).forEach(function (id) { observer.observe(nodeButtons[id]); });
     }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueDraw);
+    if (sceneBridge) root.addEventListener('workflowmap:request', function (event) {
+      var request = event.detail || {};
+      if (request.action === 'snapshot') publishState();
+      else if (request.action === 'pause') { stopPlayback(); renderState(); }
+      else if (request.action === 'redraw') queueDraw();
+      else if (request.action === 'walkthrough') {
+        if (request.command === 'previous') moveStep(-1);
+        else if (request.command === 'next') moveStep(1);
+        else if (request.command === 'restart') selectRoute(state.route);
+        else if (request.command === 'play') togglePlayback();
+      }
+      else if (request.action === 'select' && nodeData[request.node]) {
+        selectNode(request.node);
+        if (request.focusInspector) focusAndScroll(title);
+      }
+    });
     app.hidden = false;
     var fallback = root.querySelector('[data-map-fallback]');
     if (fallback) fallback.hidden = true;
