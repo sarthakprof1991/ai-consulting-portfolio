@@ -26,9 +26,9 @@ const TIMING = Object.freeze({ transition: 1500, camera: 600, packet: 1200, demo
 // reported workflow outcomes. Every number below is deliberately invented.
 const EXAMPLES = Object.freeze({
   contract: [
-    'Start with three required fields: A, B and total.',
-    'Fit each field to a numeric rule; attach the total = A + B control.',
-    'The contract is assembled before extraction begins.'
+    'Before AI reads an invoice, agree what to capture: invoice number, amount due and the source page as evidence.',
+    'Turn the client’s request into an extraction checklist: text, money and evidence. Missing or unclear information must go to review.',
+    'The extraction blueprint is ready: agreed fields, retained evidence and review rules. No invoice values have been extracted yet.'
   ],
   extract: [
     'Read the invented source: A 100, B 50, reported total 160.',
@@ -496,22 +496,47 @@ export function createDocumentQualityScene(options) {
       }
       let update;
       if (id === 'contract') {
-        exampleSheet(group, 0, -0.12);
-        const fields = ['A', 'B', 'Total'].map((text, i) =>
-          token(group, text + ' : #', -1.12, 1.7 - i * 0.47, 0.3, paleTeal, 1.08, 0.36));
-        const rule = token(group, 'Total = A + B', 0, 0.51, 0.57, amber, 2.08, 0.31);
-        const clasp = box(group, 0.38, 0.12, 0.25, teal, 0, 2.1, -0.1, true);
-        label('Required · number', -0.85, 2.23, 0.1);
-        label('Output · contract', 0.85, 2.23, 0.1);
+        // A client request becomes a capture blueprint, not extracted values
+        // and not a legal contract. One broad clipboard protects mobile type.
+        box(group, 2.27, 1.87, 0.13, paperSide, 0, 1.3, -0.12, true);
+        box(group, 2.21, 1.81, 0.065, paper, 0, 1.32, -0.025, true);
+        const choices = [['Invoice no.', 'Text'], ['Amount due', 'Money'], ['Source page', 'Evidence']];
+        const fields = choices.map(([name, type], i) => {
+          const field = new THREE.Group();
+          group.add(field);
+          box(field, 2.13, 0.39, 0.12, paleTeal, 0, 0, 0, true);
+          const nameFace = textFace(field, name, 1.26, 0.35, -0.32, 0, 0.078);
+          const divider = box(field, 0.018, 0.27, 0.018, teal, 0.36, 0, 0.072);
+          const typeFace = textFace(field, type, 0.59, 0.33, 0.71, 0, 0.078);
+          field.userData.faces = { nameFace, divider, typeFace };
+          return field;
+        });
+        const rule = token(group, 'Missing? Review', 0, 0.44, 1.14, amber, 2.28, 0.32);
+        const ready = token(group, 'Ready to extract', 0, 2.02, 0.18, teal, 2.09, 0.27);
+        const clasp = box(group, 0.49, 0.12, 0.25, teal, 0, 2.27, -0.1, true);
+        label('Input · client request', -0.85, 2.38, 0.1);
+        label('Output · checklist', 0.85, 2.38, 0.1);
         update = (a, b, c) => {
           fields.forEach((field, i) => {
             const q = cinematicEase(clamp(b * 1.65 - i * 0.24, 0, 1));
-            lerpPosition(field, [-1.12, 1.7 - i * 0.47, 0.3], [0, 1.7 - i * 0.47, 0.15], q, 0.25);
-            field.rotation.z = (1 - q) * -0.12;
+            lerpPosition(field, [i === 1 ? 0.32 : -0.32, 1.73 - i * 0.47, 0.88 + i * 0.04],
+              [0, 1.66 - i * 0.47, 0.15], q, 0.23);
+            field.rotation.z = (1 - q) * (i === 1 ? 0.09 : -0.09);
+            field.rotation.y = (1 - q) * -0.12;
+            // Keep the actual capture choices large on narrow screens; their
+            // text/money/evidence types remain spelled out in the phase caption.
+            const { nameFace, divider, typeFace } = field.userData.faces;
+            const narrow = width < 900;
+            nameFace.position.x = narrow ? 0 : -0.32;
+            nameFace.scale.set(narrow ? 1.5 : 1, narrow ? 1.45 : 1, 1);
+            divider.visible = typeFace.visible = !narrow;
           });
           rule.visible = b > 0.35;
           rule.scale.setScalar(Math.max(0.001, c));
-          clasp.position.y = 2.45 - c * 0.35;
+          ready.visible = c > 0.6;
+          ready.children[1].scale.y = width < 900 ? 1.6 : 1;
+          rule.children[1].scale.y = width < 900 ? 1.35 : 1;
+          clasp.position.y = 2.55 - c * 0.28;
         };
       } else if (id === 'extract') {
         const source = exampleSheet(group, -0.81, -0.12);
@@ -685,7 +710,8 @@ export function createDocumentQualityScene(options) {
       const heading = element('span', 'ide-scene-label-heading');
       const index = element('span', 'ide-scene-label-index', String(node.source + 1).padStart(2, '0'));
       index.setAttribute('aria-hidden', 'true');
-      heading.append(index, element('span', 'ide-scene-label-name', node.label));
+      heading.append(index, element('span', 'ide-scene-label-name',
+        node.id === 'contract' ? 'Agree what to capture' : node.label));
       button.append(heading, element('span', 'ide-scene-label-state'));
       item.append(button);
       if (!isPicker) {
@@ -1205,8 +1231,12 @@ export function createDocumentQualityScene(options) {
         prepareDemo();
       } else if (previous && !previous.playing && state.playing && canAnimate) prepareDemo();
       const focused = stages.get(state.node).node;
-      focusKind.textContent = 'Stage ' + String(focused.source + 1).padStart(2, '0') + ' / ' + focused.kind;
-      focusTitle.textContent = focused.label;
+      focusKind.textContent = focused.id === 'contract' ? 'Data contract · before AI reads'
+        : 'Stage ' + String(focused.source + 1).padStart(2, '0') + ' / ' + focused.kind;
+      focusTitle.textContent = focused.id === 'contract' ? 'Agree what to capture' : focused.label;
+      focusHint.textContent = focused.id === 'contract'
+        ? 'Choose fields, keep evidence, set review rules.'
+        : 'Synthetic example · invented values, not a route result.';
       stages.forEach((stage, id) => {
         const current = id === state.node;
         const status = current ? 'current' : visited.includes(id) ? 'visited' : route.steps.includes(id) ? 'ahead' : 'other';

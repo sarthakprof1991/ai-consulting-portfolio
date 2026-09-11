@@ -5,7 +5,7 @@
   if (!root || root.dataset.mapReady !== 'true' || !window.WorkflowMapData) return;
   // A blocked enhancement stylesheet must never replace a working map.
   if (getComputedStyle(root).getPropertyValue('--ide-scene-styles').trim() !== 'ready') return;
-  var moduleURL = new URL('ide-workflow-scene.js?v=descriptive-1', document.currentScript.src).href;
+  var moduleURL = new URL('ide-workflow-scene.js?v=contract-clarity-1', document.currentScript.src).href;
   var diagram = root.querySelector('[data-map-diagram]');
   var surface = root.querySelector('.wm-surface');
   var compact = window.matchMedia('(max-width: 899px)');

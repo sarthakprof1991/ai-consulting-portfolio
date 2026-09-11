@@ -416,6 +416,19 @@
   [data-ide-scene] .ide-scene-frame { height: 440px; }
   [data-ide-scene] .ide-scene-picker button { padding: 10px 12px; }
 }
+@media (max-width: 899px) {
+  [data-ide-scene][data-scene-node="contract"] .ide-scene-focus-caption { top: 14px; }
+  [data-ide-scene][data-scene-node="contract"] .ide-scene-focus-title {
+    font-size: 1.35rem;
+    margin-bottom: 8px;
+  }
+  [data-ide-scene][data-scene-node="contract"] .ide-scene-focus-hint {
+    display: block;
+    font-size: 13px;
+    line-height: 1.4;
+    max-width: 32ch;
+  }
+}
 @media (forced-colors: active) {
   [data-ide-scene] .ide-scene-canvas { forced-color-adjust: none; }
   [data-ide-scene] [data-scene-node][aria-current="step"] { outline: 3px solid Highlight; }
