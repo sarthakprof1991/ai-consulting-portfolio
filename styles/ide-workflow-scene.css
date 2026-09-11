@@ -1,7 +1,7 @@
 /* IDE-only progressive enhancement. The approved 2D map is the default. */
 [data-workflow-map="ide"][data-ide-scene] {
   --ide-scene-styles: ready;
-  --ide-scene-dark: #102830;
+  --ide-scene-dark: #0b1c25;
   --ide-scene-line: #46656e;
   --ide-scene-light: #eef8f5;
   --ide-scene-cyan: #8bdfd4;
@@ -15,7 +15,8 @@
 }
 [data-ide-scene] .ide-scene-modes,
 [data-ide-scene] .ide-scene-camera,
-[data-ide-scene] .ide-scene-walkthrough-controls {
+[data-ide-scene] .ide-scene-walkthrough-controls,
+[data-ide-scene] .ide-scene-perspectives {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -23,7 +24,8 @@
 [data-ide-scene] .ide-scene-modes { flex-shrink: 0; }
 [data-ide-scene] .ide-scene-modes button,
 [data-ide-scene] .ide-scene-camera button,
-[data-ide-scene] .ide-scene-walkthrough-controls button {
+[data-ide-scene] .ide-scene-walkthrough-controls button,
+[data-ide-scene] .ide-scene-perspectives button {
   min-height: 44px;
   min-width: 44px;
   padding: 10px 13px;
@@ -40,6 +42,25 @@
   border-color: var(--ide-scene-cyan);
   background: var(--ide-scene-light);
   color: #163d43;
+}
+[data-ide-scene] .ide-scene-perspectives button[aria-pressed="true"] {
+  background: #e6f3ed;
+  color: #14383e;
+  border-color: #b7e6d6;
+}
+[data-ide-scene] .ide-scene-perspectives button:hover:not([aria-pressed="true"]) { background: #2a4a53; border-color: #8bdfd4; }
+[data-ide-scene] .ide-scene-perspective-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 14px 24px 4px;
+}
+[data-ide-scene] .ide-scene-perspective-bar > p {
+  color: #bed4d6;
+  font-size: var(--wm-ui);
+  margin: 0;
 }
 [data-ide-scene] .ide-scene-modes button:hover:not(:disabled):not([aria-pressed="true"]),
 [data-ide-scene] .ide-scene-camera button:hover:not(:disabled),
@@ -106,7 +127,7 @@
 [data-ide-scene] .ide-scene-mount { border-top: 1px solid #294750; }
 [data-ide-scene] .ide-scene-frame {
   position: relative;
-  height: 680px;
+  height: 560px;
   width: 100%;
   isolation: isolate;
   overflow: hidden;
@@ -144,6 +165,37 @@
   text-transform: none;
   margin-top: 4px;
 }
+[data-ide-scene] .ide-scene-focus-caption {
+  position: absolute;
+  z-index: 2;
+  top: 110px;
+  left: 32px;
+  width: 250px;
+  pointer-events: none;
+}
+[data-ide-scene] .ide-scene-focus-kind {
+  margin: 0 0 12px;
+  color: #9ad0c9;
+  font-size: var(--wm-small);
+  line-height: 1.5;
+}
+[data-ide-scene] .ide-scene-focus-title {
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-weight: 750;
+  color: #edf7f0;
+  letter-spacing: -.035em;
+  line-height: 1.1;
+  margin: 0 0 18px;
+}
+[data-ide-scene] .ide-scene-focus-hint {
+  color: #aec6ca;
+  font-size: var(--wm-ui);
+  line-height: 1.6;
+  max-width: 25ch;
+  margin: 0;
+}
+[data-ide-scene][data-scene-focus-mode="overview"] .ide-scene-focus-caption,
+[data-ide-scene][data-scene-focus-mode="focus"] .ide-scene-labels { display: none; }
 [data-ide-scene] .ide-scene-labels {
   position: absolute;
   inset: 0;
@@ -212,10 +264,21 @@
   line-height: 1.55;
   max-width: 45ch;
 }
-[data-ide-scene] .ide-scene-picker-wrap { display: none; padding: 0 18px 24px; }
-[data-ide-scene] .ide-scene-picker-title { margin: 0 0 12px; font-size: var(--wm-ui); color: #e0eeeb; }
-[data-ide-scene] .ide-scene-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; list-style: none; margin: 0; padding: 0; }
-[data-ide-scene] .ide-scene-picker button { height: 100%; }
+[data-ide-scene] .ide-scene-picker-wrap { display: block; padding: 12px 24px 18px; }
+[data-ide-scene] .ide-scene-picker-title { margin: 0 0 10px; font-size: var(--wm-small); color: #bed4d6; }
+[data-ide-scene] .ide-scene-picker {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-ide-scene] .ide-scene-picker button { height: 100%; min-height: 86px; padding: 10px 8px; }
+[data-ide-scene] .ide-scene-picker .ide-scene-label-heading { display: block; }
+[data-ide-scene] .ide-scene-picker .ide-scene-label-index { display: block; margin-bottom: 6px; }
+[data-ide-scene] .ide-scene-picker .ide-scene-label-name { font-size: .8125rem; }
+[data-ide-scene] .ide-scene-picker .ide-scene-label-state { display: none; }
 [data-ide-scene][data-scene-labels="compact"] .ide-scene-label-item { width: 24px; }
 [data-ide-scene][data-scene-labels="compact"] .ide-scene-label { display: none; }
 [data-ide-scene][data-scene-labels="compact"] .ide-scene-number {
@@ -239,6 +302,21 @@
 }
 [data-ide-scene][data-scene-labels="compact"] .ide-scene-picker-wrap { display: block; }
 @media (max-width: 899px) {
+  [data-ide-scene] .ide-scene-perspective-bar { padding: 12px 18px 4px; }
+  [data-ide-scene] .ide-scene-picker-wrap { padding: 12px 18px 16px; }
+  [data-ide-scene] .ide-scene-picker {
+    grid-template-columns: repeat(7, minmax(148px, 1fr));
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #6faba5 #17343e;
+    padding-bottom: 8px;
+  }
+  [data-ide-scene] .ide-scene-picker button { min-height: 78px; }
+  [data-ide-scene] .ide-scene-focus-caption { top: 26px; left: 24px; width: calc(100% - 48px); }
+  [data-ide-scene] .ide-scene-focus-title { font-size: 1.5rem; max-width: 28ch; }
+  [data-ide-scene] .ide-scene-focus-kind { margin-bottom: 6px; }
+  [data-ide-scene] .ide-scene-focus-hint,
+  [data-ide-scene][data-scene-focus-mode="focus"] .ide-scene-caption { display: none; }
   [data-ide-scene] .ide-scene-walkthrough { padding: 16px 18px; }
   [data-ide-scene] .ide-scene-toolbar { flex-direction: column; align-items: flex-start; padding: 8px 18px 20px; gap: 10px; }
   [data-ide-scene] .ide-scene-frame { height: 440px; }
@@ -250,8 +328,7 @@
   [data-ide-scene][data-scene-mode="3d"] .wm-inspector .wm-view { width: auto; }
 }
 @media (max-width: 480px) {
-  [data-ide-scene] .ide-scene-frame { height: 360px; }
-  [data-ide-scene] .ide-scene-picker { grid-template-columns: 1fr; }
+  [data-ide-scene] .ide-scene-frame { height: 440px; }
   [data-ide-scene] .ide-scene-picker button { padding: 10px 12px; }
 }
 @media (forced-colors: active) {

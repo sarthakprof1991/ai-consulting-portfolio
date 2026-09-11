@@ -5,7 +5,7 @@
   if (!root || root.dataset.mapReady !== 'true' || !window.WorkflowMapData) return;
   // A blocked enhancement stylesheet must never replace a working map.
   if (getComputedStyle(root).getPropertyValue('--ide-scene-styles').trim() !== 'ready') return;
-  var moduleURL = new URL('ide-workflow-scene.js?v=1', document.currentScript.src).href;
+  var moduleURL = new URL('ide-workflow-scene.js?v=cinematic-2', document.currentScript.src).href;
   var diagram = root.querySelector('[data-map-diagram]');
   var surface = root.querySelector('.wm-surface');
   var compact = window.matchMedia('(max-width: 899px)');
@@ -48,9 +48,9 @@
     if (failed) note.textContent = '3D is unavailable in this browser. The complete 2D map and stage inspector remain available.';
     else if (pending && wanted === '3d') note.textContent = 'Loading the 3D scene. The 2D map stays available until it is ready.';
     else if (root.dataset.sceneMode === '3d') note.textContent = compact.matches
-      ? 'Compact 3D: numbered stages keep the scene clear. Choose a full stage label below; use buttons to rotate or zoom.'
-      : 'A dimensional view of the same workflow. Select a stage to inspect it; switch to 2D at any time.';
-    else if (compact.matches && !explicitChoice) note.textContent = '2D is the default on smaller screens for readable labels. Choose 3D scene to explore the numbered scene and stage picker.';
+      ? 'Cinematic 3D: choose a stage above to bring it forward. Overview shows the full workflow; scrolling stays on the page.'
+      : 'Move through the workflow in close-up. Focus stage brings the selected stage forward; Overview reveals every handoff.';
+    else if (compact.matches && !explicitChoice) note.textContent = '2D is the default on smaller screens for readable labels. Choose 3D scene for cinematic stage close-ups and a full workflow overview.';
     else if (forcedColors.matches && !explicitChoice) note.textContent = '2D is the default in high-contrast mode. You can still choose the 3D scene.';
     else note.textContent = 'The complete 2D map. Switching views keeps your route, stage, and inspector detail level.';
   }
@@ -107,7 +107,9 @@
         root: root, mount: mount, model: window.WorkflowMapData.ide,
         initialState: state, reducedMotion: reducedMotion.matches,
         onSelect: function (id) {
-          request('select', { node: id, focusInspector: compact.matches });
+          // Keep mobile users with the cinematic transition. The existing
+          // explicit inspector and full-stage links still provide handoffs.
+          request('select', { node: id, focusInspector: false });
         },
         onWalkthrough: function (command) { request('walkthrough', { command: command }); },
         onPause: function () { if (state && state.playing) request('pause'); },

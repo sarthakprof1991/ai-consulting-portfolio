@@ -17,18 +17,18 @@ const HANDOFFS = {
   'reconcile>escalate': [[0, 1.25], [0, 4.35]]
 };
 const BOUNDS = Object.freeze({
-  yaw: Object.freeze([-12, 12]), elevation: Object.freeze([49, 61]),
+  yaw: Object.freeze([-32, 32]), elevation: Object.freeze([-10, 14]),
   zoom: Object.freeze([0.88, 1.12])
 });
-const HOME = Object.freeze({ yaw: 6, elevation: 55, zoom: 1 });
-const TIMING = Object.freeze({ lift: 480, camera: 320, packet: 1100 });
+const HOME = Object.freeze({ yaw: 0, elevation: 0, zoom: 1 });
+const TIMING = Object.freeze({ transition: 1500, camera: 600, packet: 1200 });
 const COLORS = {
   paper: 0xe6ede2, paperSide: 0xb4c4bd, ink: 0x36565c, teal: 0x70cfc0,
   amber: 0xdcb479, base: 0x294851, current: 0x417e7b, visited: 0x285d5e
 };
 const clamp = THREE.MathUtils.clamp;
 const radians = THREE.MathUtils.degToRad;
-const ease = t => 1 - Math.pow(1 - t, 3);
+const cinematicEase = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 function element(tag, className, text) {
   const item = document.createElement(tag);
@@ -49,10 +49,13 @@ export function createDocumentQualityScene(options) {
   let renderCount = 0;
   let reduced = options.reducedMotion;
   let state = null;
-  let liftTween = null;
-  let cameraTween = null;
+  let transition = null;
+  let focusMode = 'focus';
+  let transitionProgress = 1;
+  let transitionDirection = 1;
   let packet = null;
   let cameraState = { ...HOME };
+  let cameraPose = { target: new THREE.Vector3(), radius: 32, azimuth: 12, elevation: 55, focus: 0 };
   let width = 1000;
   let height = 680;
   let compact = false;
@@ -99,6 +102,19 @@ export function createDocumentQualityScene(options) {
       walkthroughControls.append(button);
     }
     walkthrough.append(walkthroughText, walkthroughControls);
+    const perspectiveBar = element('div', 'ide-scene-perspective-bar');
+    const perspectiveLabel = element('p', '', 'Explore the workflow');
+    const perspectiveControls = element('div', 'ide-scene-perspectives');
+    perspectiveControls.setAttribute('role', 'group');
+    perspectiveControls.setAttribute('aria-label', '3D composition');
+    for (const [mode, label] of [['focus', 'Focus stage'], ['overview', 'Overview']]) {
+      const button = element('button', '', label);
+      button.type = 'button';
+      button.dataset.sceneView = mode;
+      button.setAttribute('aria-pressed', String(mode === focusMode));
+      perspectiveControls.append(button);
+    }
+    perspectiveBar.append(perspectiveLabel, perspectiveControls);
     const frame = element('div', 'ide-scene-frame');
     frame.dataset.sceneFrame = '';
     const canvas = element('canvas', 'ide-scene-canvas');
@@ -106,9 +122,15 @@ export function createDocumentQualityScene(options) {
     canvas.setAttribute('aria-hidden', 'true');
     const caption = element('p', 'ide-scene-caption', 'Document quality / workflow model');
     caption.append(element('strong', '', '07 stages · 03 routes'));
+    const focusCaption = element('div', 'ide-scene-focus-caption');
+    const focusKind = element('p', 'ide-scene-focus-kind');
+    const focusTitle = element('h3', 'ide-scene-focus-title');
+    focusTitle.dataset.sceneFocusTitle = '';
+    const focusHint = element('p', 'ide-scene-focus-hint', 'Select a stage or use Next to move through the workflow.');
+    focusCaption.append(focusKind, focusTitle, focusHint);
     const labels = element('ol', 'ide-scene-labels');
     labels.setAttribute('aria-label', '3D workflow stages; choose a stage to inspect');
-    frame.append(canvas, caption, labels);
+    frame.append(canvas, caption, focusCaption, labels);
     const footer = element('div', 'ide-scene-footer');
     const cameraButtons = element('div', 'ide-scene-camera');
     cameraButtons.setAttribute('role', 'group');
@@ -128,13 +150,13 @@ export function createDocumentQualityScene(options) {
     cameraButtons.setAttribute('aria-describedby', help.id);
     footer.append(cameraButtons, help);
     const pickerWrap = element('div', 'ide-scene-picker-wrap');
-    const pickerTitle = element('p', 'ide-scene-picker-title', 'Choose a stage to inspect');
+    const pickerTitle = element('p', 'ide-scene-picker-title', 'Choose a stage · all 7 remain available');
     pickerTitle.id = 'ide-scene-picker-title';
     const picker = element('ol', 'ide-scene-picker');
     picker.dataset.scenePicker = '';
     picker.setAttribute('aria-labelledby', pickerTitle.id);
     pickerWrap.append(pickerTitle, picker);
-    mount.append(walkthrough, frame, footer, pickerWrap);
+    mount.append(walkthrough, perspectiveBar, pickerWrap, frame, footer);
 
     renderer = new THREE.WebGLRenderer({
       canvas, antialias: true, alpha: false, powerPreference: 'low-power'
@@ -151,9 +173,9 @@ export function createDocumentQualityScene(options) {
     renderer.debug.onShaderError = () => { throw new Error('IDE scene shader unavailable'); };
 
     const world = new THREE.Scene();
-    world.background = new THREE.Color(0x102830);
-    const camera = new THREE.OrthographicCamera(-12, 12, 9, -9, 0.1, 90);
-    const target = new THREE.Vector3(0, 0.2, 0.15);
+    world.background = new THREE.Color(0x0b1c25);
+    world.fog = new THREE.Fog(0x0b1c25, 12, 38);
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 150);
     world.add(new THREE.HemisphereLight(0xddebe7, 0x27424a, 2.4));
     const sun = new THREE.DirectionalLight(0xffefda, 3.1);
     sun.position.set(-7, 15, 8);
@@ -172,6 +194,9 @@ export function createDocumentQualityScene(options) {
     const rim = new THREE.DirectionalLight(0xa1dace, 1.8);
     rim.position.set(7, 8, -9);
     world.add(rim);
+    const focusLight = new THREE.SpotLight(0xe0f8ee, 32, 32, Math.PI / 5, 0.8, 1.2);
+    focusLight.position.set(0, 14, 6);
+    world.add(focusLight, focusLight.target);
 
     function material(color, properties = {}) {
       return track(new THREE.MeshStandardMaterial({
@@ -322,7 +347,7 @@ export function createDocumentQualityScene(options) {
       }
     }
 
-    const ground = material(0x132e37, { roughness: 0.94, metalness: 0 });
+    const ground = material(0x0c222c, { roughness: 0.94, metalness: 0 });
     box(world, 200, 0.1, 200, ground, 0, -0.83, 0);
     const board = new THREE.Group();
     world.add(board);
@@ -377,8 +402,19 @@ export function createDocumentQualityScene(options) {
         marker.rotation.y = Math.PI / 4;
       }
       buildObject(node.id, group);
+      // Each station owns its object finishes so the foreground can separate
+      // from the receding world without hiding or removing any workflow node.
+      const finishes = new Map();
+      group.traverse(object => {
+        if (!object.isMesh || object.material === stageMaterial || object.material === railMaterial) return;
+        const original = object.material;
+        if (!finishes.has(original)) finishes.set(original, {
+          material: track(original.clone()), color: original.color.clone()
+        });
+        object.material = finishes.get(original).material;
+      });
       stages.set(node.id, {
-        group, stageMaterial, railMaterial,
+        group, stageMaterial, railMaterial, finishes: [...finishes.values()], exposure: 1,
         label: createLabel(node, false), picker: createLabel(node, true), node
       });
     });
@@ -438,7 +474,7 @@ export function createDocumentQualityScene(options) {
     function syncDiagnostics() {
       root.dataset.sceneNode = state ? state.node : '';
       root.dataset.sceneActive = String(active && visible && !document.hidden && !disposed);
-      root.dataset.sceneAnimating = String(Boolean(active && visible && !document.hidden && (liftTween || cameraTween || packet)));
+      root.dataset.sceneAnimating = String(Boolean(active && visible && !document.hidden && (transition || packet)));
       root.dataset.scenePacket = String(Boolean(packet && packetObject.visible));
       root.dataset.sceneHandoff = lastHandoff;
       root.dataset.sceneCameraYaw = cameraState.yaw.toFixed(2);
@@ -446,6 +482,9 @@ export function createDocumentQualityScene(options) {
       root.dataset.sceneCameraZoom = cameraState.zoom.toFixed(2);
       root.dataset.sceneRenderCount = String(renderCount);
       root.dataset.sceneReducedMotion = String(reduced);
+      root.dataset.sceneFocusMode = focusMode;
+      root.dataset.sceneTransitionProgress = transitionProgress.toFixed(3);
+      root.dataset.sceneTransitionDirection = String(transitionDirection);
     }
     Object.defineProperty(root, 'ideSceneDiagnostics', {
       configurable: true,
@@ -457,6 +496,19 @@ export function createDocumentQualityScene(options) {
         packetEdge: packet ? packet.edge : null, lastHandoff,
         packetProgress: packet ? clamp((performance.now() - packet.start) / TIMING.packet, 0, 1) : null,
         camera: Object.freeze({ ...cameraState }), bounds: BOUNDS, timing: TIMING,
+        cameraType: 'PerspectiveCamera', focusMode,
+        cameraPosition: Object.freeze(camera.position.toArray()),
+        cameraTarget: Object.freeze(cameraPose.target.toArray()),
+        cameraPose: Object.freeze({
+          radius: cameraPose.radius, azimuth: cameraPose.azimuth,
+          elevation: cameraPose.elevation, focus: cameraPose.focus, fov: camera.fov
+        }),
+        transitionProgress, transitionDirection,
+        stageTransforms: Object.freeze(Object.fromEntries([...stages].map(([id, stage]) => [id, Object.freeze({
+          position: Object.freeze(stage.group.position.toArray()),
+          rotation: Object.freeze([stage.group.rotation.x, stage.group.rotation.y, stage.group.rotation.z]),
+          scale: stage.group.scale.x, exposure: stage.exposure
+        })]))),
         labelLayout: compact ? 'compact' : 'full', renderCount,
         drawCalls: renderer.info.render.calls, pixelRatio: renderer.getPixelRatio()
       })
@@ -468,93 +520,161 @@ export function createDocumentQualityScene(options) {
       return { x: (project.x + 1) * width / 2, y: (1 - project.y) * height / 2 };
     }
     function applyCamera() {
-      const yaw = radians(cameraState.yaw);
-      const elevation = radians(cameraState.elevation);
+      const yaw = radians(cameraPose.azimuth);
+      const elevation = radians(cameraPose.elevation);
       camera.position.set(
-        Math.sin(yaw) * Math.cos(elevation) * 32,
-        Math.sin(elevation) * 32,
-        Math.cos(yaw) * Math.cos(elevation) * 32
-      ).add(target);
-      camera.lookAt(target);
-      // Fixed world envelope, not just the current node: no camera action can
-      // clip a station. The compact mode retains all seven numbered docks.
-      const aspect = width / height;
-      const fitHeight = Math.max(17.6, 21.8 / aspect);
-      const halfHeight = fitHeight / (2 * cameraState.zoom);
-      camera.top = halfHeight;
-      camera.bottom = -halfHeight;
-      camera.left = -halfHeight * aspect;
-      camera.right = halfHeight * aspect;
+        Math.sin(yaw) * Math.cos(elevation) * cameraPose.radius,
+        Math.sin(elevation) * cameraPose.radius,
+        Math.cos(yaw) * Math.cos(elevation) * cameraPose.radius
+      ).add(cameraPose.target);
+      camera.lookAt(cameraPose.target);
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
       camera.updateMatrixWorld();
+      world.fog.near = THREE.MathUtils.lerp(35, 11, cameraPose.focus);
+      world.fog.far = THREE.MathUtils.lerp(85, 31, cameraPose.focus);
+      focusLight.position.set(cameraPose.target.x - 3, 13, cameraPose.target.z + 6);
+      focusLight.target.position.copy(cameraPose.target);
       cameraButtons.querySelector('[data-scene-camera="left"]').disabled = cameraState.yaw <= BOUNDS.yaw[0] + 0.01;
       cameraButtons.querySelector('[data-scene-camera="right"]').disabled = cameraState.yaw >= BOUNDS.yaw[1] - 0.01;
       cameraButtons.querySelector('[data-scene-camera="in"]').disabled = cameraState.zoom >= BOUNDS.zoom[1] - 0.001;
       cameraButtons.querySelector('[data-scene-camera="out"]').disabled = cameraState.zoom <= BOUNDS.zoom[0] + 0.001;
     }
-    function labelRect(stage, numbered) {
-      const [x, z] = POSITIONS[stage.node.id];
-      const p = screenPoint(x, stage.group.position.y + 0.32, z + (numbered ? 1.04 : 0.85));
-      const w = numbered ? 24 : 180;
-      const h = numbered ? 24 : 70;
-      return { left: p.x - w / 2, top: p.y, right: p.x + w / 2, bottom: p.y + h };
-    }
-    function overlaps(a, b, gap = 8) {
-      return a.left < b.right + gap && a.right > b.left - gap && a.top < b.bottom + gap && a.bottom > b.top - gap;
-    }
-    function objectRect(stage) {
-      const [x, z] = POSITIONS[stage.node.id];
-      const points = [];
-      for (const xx of [-1.2, 1.2]) for (const zz of [-0.6, 0.65]) for (const yy of [0.5, 2.2]) {
-        points.push(screenPoint(x + xx, stage.group.position.y + yy, z + zz));
-      }
-      return {
-        left: Math.min(...points.map(p => p.x)), right: Math.max(...points.map(p => p.x)),
-        top: Math.min(...points.map(p => p.y)), bottom: Math.max(...points.map(p => p.y))
-      };
-    }
     function placeLabels() {
-      const list = [...stages.values()];
-      // At narrow widths, 200% zoom, or a tight camera angle, never shrink the
-      // approved text or let one label cover another station. Use numbered
-      // anchors plus a readable native picker instead.
-      let needsPicker = width < 860 || window.matchMedia('(max-width: 899px)').matches;
-      if (!needsPicker) {
-        const rects = list.map(stage => labelRect(stage, false));
-        const objects = list.map(objectRect);
-        needsPicker = rects.some((rect, i) => rect.left < 14 || rect.right > width - 14 || rect.bottom > height - 12 ||
-          rects.some((other, j) => i !== j && overlaps(rect, other)) ||
-          objects.some((other, j) => i !== j && overlaps(rect, other, 2)));
-      }
-      const focusMovedToPicker = needsPicker && !compact && labels.contains(document.activeElement)
-        ? document.activeElement.dataset.sceneNode : null;
-      compact = needsPicker;
-      root.dataset.sceneLabels = compact ? 'compact' : 'full';
-      labels.setAttribute('aria-hidden', String(compact));
-      labels.setAttribute('aria-label', compact
-        ? 'Numbered 3D stages; full stage picker follows the camera controls'
-        : '3D workflow stages; choose a stage to inspect');
-      list.forEach(stage => {
-        const rect = labelRect(stage, compact);
-        stage.label.item.style.transform = `translate(${rect.left.toFixed(1)}px, ${rect.top.toFixed(1)}px)`;
-        stage.label.button.setAttribute('aria-label', stage.node.label + '. ' + stage.label.button.dataset.stateText);
+      // The native seven-stage strip is always available. Spatial labels are
+      // only decorative overview numbers: a close-up never inherits overlapping
+      // background labels or hides the user's only route to another stage.
+      compact = true;
+      root.dataset.sceneLabels = 'compact';
+      root.dataset.sceneFocusMode = focusMode;
+      labels.setAttribute('aria-hidden', 'true');
+      stages.forEach(stage => {
+        stage.group.updateWorldMatrix(true, false);
+        const anchor = stage.group.localToWorld(new THREE.Vector3(0, 0.33, 1.08));
+        const p = screenPoint(anchor.x, anchor.y, anchor.z);
+        stage.label.item.style.transform = `translate(${(p.x - 12).toFixed(1)}px, ${p.y.toFixed(1)}px)`;
         stage.label.item.dataset.current = String(stage.node.id === state?.node);
       });
-      pickerWrap.setAttribute('aria-hidden', String(!compact));
-      if (focusMovedToPicker) stages.get(focusMovedToPicker).picker.button.focus({ preventScroll: true });
+      pickerWrap.setAttribute('aria-hidden', 'false');
+      perspectiveControls.querySelectorAll('[data-scene-view]').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.sceneView === focusMode));
+      });
       help.textContent = reduced
-        ? 'Reduced motion: static 3D with manual camera controls. Previous and Next still work.'
-        : compact
-          ? 'Use the camera buttons. Numbered stages match the full labels below; scrolling stays on the page.'
-          : 'Drag the scene to orbit within a readable view. Arrows are directed handoffs; Next follows the route.';
+        ? 'Reduced motion: instant perspective poses. Stage selection and manual camera controls remain available.'
+        : focusMode === 'focus'
+          ? 'Drag to look around the foreground stage. Overview shows every directed handoff; Next brings the next stage forward.'
+          : 'All seven stages and their directed handoffs. Choose Focus stage for an immersive close-up.';
+    }
+    function desiredPose() {
+      if (focusMode === 'overview') return {
+        target: new THREE.Vector3(0, 0.5, 0),
+        radius: Math.max(32, 29 / (width / height)) / cameraState.zoom,
+        azimuth: 12 + cameraState.yaw * 0.45,
+        elevation: 55 + cameraState.elevation * 0.5, focus: 0
+      };
+      const [x, z] = POSITIONS[state.node];
+      const azimuth = 30 + cameraState.yaw;
+      const target = new THREE.Vector3(x, width < 760 ? 4.85 : 4.4, z);
+      // Reserve editorial title space on wide screens without obscuring the
+      // geometry. Mobile centers the selected platform in its own safe area.
+      if (width >= 760) target.add(new THREE.Vector3(
+        -Math.cos(radians(azimuth)) * 1.25, 0, Math.sin(radians(azimuth)) * 1.25
+      ));
+      return {
+        target, radius: Math.max(10.8, 8.7 / (width / height)) / cameraState.zoom,
+        azimuth, elevation: 24 + cameraState.elevation, focus: 1
+      };
+    }
+    function desiredStage(stage) {
+      const chosen = stage.node.id === state.node;
+      const focus = focusMode === 'focus';
+      return {
+        y: chosen ? focus ? 2.65 : 0.4 : 0,
+        rx: chosen && focus ? -0.055 : 0,
+        ry: chosen && focus ? radians(10 + [-8, 6, -4, 8, -6, 4, -2][stage.node.source]) : 0,
+        rz: 0, scale: focus ? chosen ? 1.36 : 0.82 : 1,
+        exposure: focus ? chosen ? 1 : 0.36 : 1
+      };
+    }
+    function captureStage(stage) {
+      return {
+        y: stage.group.position.y, rx: stage.group.rotation.x,
+        ry: stage.group.rotation.y, rz: stage.group.rotation.z,
+        scale: stage.group.scale.x, exposure: stage.exposure
+      };
+    }
+    function applyStage(stage, pose) {
+      stage.group.position.y = pose.y;
+      stage.group.rotation.set(pose.rx, pose.ry, pose.rz);
+      stage.group.scale.setScalar(pose.scale);
+      stage.exposure = pose.exposure;
+      stage.finishes.forEach(finish => {
+        finish.material.color.copy(finish.color).multiplyScalar(pose.exposure);
+      });
+    }
+    function sampleTransition(now) {
+      if (!transition) return;
+      const t = clamp((now - transition.start) / transition.duration, 0, 1);
+      const p = cinematicEase(t);
+      const arc = Math.sin(Math.PI * p);
+      transitionProgress = t;
+      cameraPose.target.lerpVectors(transition.from.target, transition.to.target, p);
+      for (const key of ['radius', 'azimuth', 'elevation', 'focus']) {
+        cameraPose[key] = THREE.MathUtils.lerp(transition.from[key], transition.to[key], p);
+      }
+      // Pull out, orbit over the handoff, then dolly into the new foreground.
+      // The sine envelope is zero at both ends, including on interruption.
+      // Leave room for the tilted foreground platform during the widest turn,
+      // not just for the upright object in its final close-up.
+      cameraPose.radius += arc * transition.sweep * 4.8;
+      cameraPose.target.y -= arc * transition.sweep * 0.65;
+      cameraPose.azimuth += arc * transition.direction * transition.sweep * 38;
+      cameraPose.elevation += arc * transition.sweep * 8;
+      stages.forEach((stage, id) => {
+        const a = transition.stages[id].from, b = transition.stages[id].to;
+        const pose = {};
+        for (const key of Object.keys(a)) pose[key] = THREE.MathUtils.lerp(a[key], b[key], p);
+        if (id === transition.selected) {
+          pose.y += arc * transition.sweep * 0.68;
+          // Counter-turn against the camera orbit: the viewer sees the side
+          // thickness and layered objects rotate into their final frontal pose.
+          pose.ry -= arc * transition.direction * transition.sweep * 0.96;
+          pose.rx += arc * transition.sweep * 0.16;
+          pose.rz -= arc * transition.direction * transition.sweep * 0.1;
+          pose.scale += arc * transition.sweep * 0.08;
+        }
+        applyStage(stage, pose);
+      });
+      renderer.shadowMap.needsUpdate = true;
+      if (t >= 1) { transition = null; transitionProgress = 1; }
+    }
+    function beginTransition(direction = 1, choreograph = true) {
+      sampleTransition(performance.now());
+      transitionDirection = direction;
+      if (reduced || !active || !visible || document.hidden) { settle(); return; }
+      transition = {
+        start: performance.now(), duration: choreograph ? TIMING.transition : TIMING.camera,
+        from: { ...cameraPose, target: cameraPose.target.clone() }, to: desiredPose(),
+        direction, sweep: choreograph ? focusMode === 'focus' ? 1 : 0.32 : 0,
+        selected: state.node,
+        stages: Object.fromEntries([...stages].map(([id, stage]) => [id, {
+          from: captureStage(stage), to: desiredStage(stage)
+        }]))
+      };
+      transitionProgress = 0;
+      queueFrame();
+      syncDiagnostics();
     }
     function settle() {
-      liftTween = null;
-      if (cameraTween) cameraState = { ...cameraTween.to };
-      cameraTween = null;
+      transition = null;
+      transitionProgress = 1;
       packet = null;
       packetObject.visible = false;
-      stages.forEach((stage, id) => { stage.group.position.y = state?.node === id ? 0.46 : 0; });
+      if (state) {
+        cameraPose = desiredPose();
+        stages.forEach(stage => applyStage(stage, desiredStage(stage)));
+        applyCamera();
+      }
       edges.forEach(edge => { edge.highlight.visible = false; });
       renderer.shadowMap.needsUpdate = true;
       syncDiagnostics();
@@ -584,21 +704,7 @@ export function createDocumentQualityScene(options) {
       frameID = null;
       if (disposed || !active || !visible || document.hidden) return;
       try {
-        if (liftTween) {
-          const t = clamp((now - liftTween.start) / TIMING.lift, 0, 1);
-          stages.forEach((stage, id) => {
-            const from = liftTween.from[id];
-            const to = state.node === id ? 0.46 : 0;
-            stage.group.position.y = THREE.MathUtils.lerp(from, to, ease(t));
-          });
-          renderer.shadowMap.needsUpdate = true;
-          if (t >= 1) liftTween = null;
-        }
-        if (cameraTween) {
-          const t = clamp((now - cameraTween.start) / TIMING.camera, 0, 1);
-          for (const key of Object.keys(HOME)) cameraState[key] = THREE.MathUtils.lerp(cameraTween.from[key], cameraTween.to[key], ease(t));
-          if (t >= 1) cameraTween = null;
-        }
+        sampleTransition(now);
         if (packet) {
           const t = clamp((now - packet.start) / TIMING.packet, 0, 1);
           const edge = edges.get(packet.edge);
@@ -619,7 +725,7 @@ export function createDocumentQualityScene(options) {
         renderer.render(world, camera);
         renderCount += 1;
         syncDiagnostics();
-        if (liftTween || cameraTween || packet) queueFrame();
+        if (transition || packet) queueFrame();
       } catch (error) { onError(error); }
     }
     function resize() {
@@ -632,6 +738,7 @@ export function createDocumentQualityScene(options) {
       const ratio = Math.min(window.devicePixelRatio || 1, 1.5, Math.sqrt(2200000 / (width * height)));
       renderer.setPixelRatio(ratio);
       renderer.setSize(width, height, false);
+      if (!transition && state) cameraPose = desiredPose();
       applyCamera();
       placeLabels();
       queueFrame();
@@ -641,6 +748,7 @@ export function createDocumentQualityScene(options) {
       const previous = state;
       const moved = previous && previous.node !== next.node;
       const routeChanged = previous && previous.route !== next.route;
+      const occurrenceChanged = previous && previous.step !== next.step;
       if (moved || routeChanged || (previous && (previous.view !== next.view || (previous.playing && !next.playing && previous.step === next.step)))) {
         // Preserve in-flight heights for smooth handoff; cancel the old packet.
         packet = null;
@@ -660,9 +768,15 @@ export function createDocumentQualityScene(options) {
       mirroredPlay.setAttribute('aria-pressed', String(state.playing));
       const visited = route.steps.slice(0, state.step);
       const canAnimate = !reduced && active && visible && !document.hidden;
-      if (moved && canAnimate) {
-        liftTween = { start: performance.now(), from: Object.fromEntries([...stages].map(([id, stage]) => [id, stage.group.position.y])) };
+      if ((moved || occurrenceChanged) && canAnimate) {
+        const direction = previous.route === state.route
+          ? Math.sign(state.step - previous.step) || 1
+          : Math.sign(stages.get(state.node).node.source - stages.get(previous.node).node.source) || 1;
+        beginTransition(direction);
       } else if (!previous || !canAnimate) settle();
+      const focused = stages.get(state.node).node;
+      focusKind.textContent = 'Stage ' + String(focused.source + 1).padStart(2, '0') + ' / ' + focused.kind;
+      focusTitle.textContent = focused.label;
       stages.forEach((stage, id) => {
         const current = id === state.node;
         const status = current ? 'current' : visited.includes(id) ? 'visited' : route.steps.includes(id) ? 'ahead' : 'other';
@@ -698,7 +812,7 @@ export function createDocumentQualityScene(options) {
           edges.get(handoff).highlight.visible = true;
         }
       } else if (moved || routeChanged) lastHandoff = '';
-      if (!moved && previous && previous.view !== state.view) settle();
+      if (!moved && previous && (previous.view !== state.view || (previous.playing && !state.playing && !occurrenceChanged))) settle();
       renderer.shadowMap.needsUpdate = true;
       syncDiagnostics();
       queueFrame();
@@ -730,12 +844,9 @@ export function createDocumentQualityScene(options) {
         elevation: clamp(next.elevation, ...BOUNDS.elevation),
         zoom: clamp(next.zoom, ...BOUNDS.zoom)
       };
-      if (animate && !reduced && active && visible && !document.hidden) {
-        cameraTween = { start: performance.now(), from: { ...cameraState }, to: destination };
-      } else {
-        cameraTween = null;
-        cameraState = destination;
-      }
+      cameraState = destination;
+      if (animate) beginTransition(1, false);
+      else settle();
       queueFrame();
       syncDiagnostics();
     }
@@ -743,18 +854,27 @@ export function createDocumentQualityScene(options) {
       const button = event.target.closest('[data-scene-camera]');
       if (!button || button.disabled) return;
       options.onPause();
-      const next = { ...(cameraTween ? cameraTween.to : cameraState) };
-      if (button.dataset.sceneCamera === 'left') next.yaw -= 4;
-      if (button.dataset.sceneCamera === 'right') next.yaw += 4;
+      const next = { ...cameraState };
+      if (button.dataset.sceneCamera === 'left') next.yaw -= 8;
+      if (button.dataset.sceneCamera === 'right') next.yaw += 8;
       if (button.dataset.sceneCamera === 'in') next.zoom += 0.06;
       if (button.dataset.sceneCamera === 'out') next.zoom -= 0.06;
       moveCamera(button.dataset.sceneCamera === 'reset' ? HOME : next);
+    });
+    listen(perspectiveControls, 'click', event => {
+      const button = event.target.closest('[data-scene-view]');
+      if (!button || button.dataset.sceneView === focusMode) return;
+      options.onPause();
+      sampleTransition(performance.now());
+      focusMode = button.dataset.sceneView;
+      beginTransition(focusMode === 'focus' ? 1 : -1);
+      placeLabels();
     });
     const raycaster = new THREE.Raycaster();
     listen(canvas, 'pointerdown', event => {
       if (event.button !== 0 || event.pointerType === 'touch' || !active) return;
       options.onPause();
-      cameraTween = null;
+      sampleTransition(performance.now());
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, camera: { ...cameraState }, moved: false };
       canvas.setPointerCapture(event.pointerId);
       canvas.dataset.dragging = 'true';
@@ -765,7 +885,7 @@ export function createDocumentQualityScene(options) {
       const dy = event.clientY - drag.y;
       if (Math.hypot(dx, dy) > 5) drag.moved = true;
       if (drag.moved) moveCamera({
-        ...drag.camera, yaw: drag.camera.yaw - dx * 0.06,
+        ...drag.camera, yaw: drag.camera.yaw - dx * 0.12,
         elevation: drag.camera.elevation + dy * 0.035
       }, false);
     });
@@ -829,7 +949,7 @@ export function createDocumentQualityScene(options) {
       focusNode(id) {
         const stage = stages.get(id);
         if (!stage) return;
-        const control = compact ? stage.picker.button : stage.label.button;
+        const control = stage.picker.button;
         control.focus({ preventScroll: true });
         control.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
       }
