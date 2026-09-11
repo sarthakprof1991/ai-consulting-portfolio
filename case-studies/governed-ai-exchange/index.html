@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="../../styles/global.css">
   <link rel="stylesheet" href="../ide-quality/case-study.css">
   <link rel="stylesheet" href="../../styles/case-study-additions.css">
+  <link rel="stylesheet" href="../../styles/workflow-map.css">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -35,6 +36,11 @@
       <p class="lede">An AI-built application is not ready for a client just because it runs. This project connected reusable AI capabilities, internal review, and controlled external sharing into one delivery workflow.</p>
       <div class="role-strip"><span>Platform architecture</span><span>Backend implementation</span><span>AI integration</span><span>Review-led delivery</span></div>
       <nav class="chapter-links" aria-label="On this page"><a href="#workflow">Explore the workflow</a><a href="#contribution">My contribution</a></nav>
+    </section>
+    <section class="workflow-map" id="interactive-flow" data-workflow-map="delivery" aria-labelledby="interactive-flow-title">
+      <div class="wm-intro"><p class="eyebrow">Interactive workflow</p><h2 id="interactive-flow-title">From draft to a deliberate release.</h2><p>Explore the described workflow as a schematic, not a live application builder: a human release decision and a separate reuse loop remain distinct.</p></div>
+      <p class="wm-fallback-note" data-map-fallback><a href="#workflow-title">Read the workflow stages below →</a><noscript> Interactive routes require JavaScript; the full narrative remains available.</noscript></p>
+      <div class="wm-app" data-map-body hidden></div>
     </section>
     <ol class="journey" aria-label="Delivery model at a glance">
       <li><span>01</span><strong>Create with reusable capability</strong></li>
@@ -86,5 +92,7 @@
   <footer><p>© <span data-year></span> Sarthak Banga</p><p>AI Engineering &amp; Adoption Consultant</p></footer>
   <script src="../../scripts/site.js"></script>
   <script src="../../scripts/case-study-views.js"></script>
+  <script src="../../scripts/workflow-map-data.js"></script>
+  <script src="../../scripts/workflow-map.js"></script>
 </body>
 </html>

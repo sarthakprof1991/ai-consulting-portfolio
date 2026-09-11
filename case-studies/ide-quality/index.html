@@ -23,6 +23,8 @@
   <title>Why “AI Extracted It” Is Not Good Enough | Sarthak Banga</title>
   <link rel="stylesheet" href="../../styles/global.css">
   <link rel="stylesheet" href="case-study.css">
+  <link rel="stylesheet" href="../../styles/workflow-map.css">
+  <noscript><style>.view-switch { display: none; }</style></noscript>
 </head>
 <body>
   <header class="site-header"><a class="brand" href="../../">SB<span>.</span></a><nav aria-label="Primary navigation"><a href="../../#case-studies">Case studies</a><a href="mailto:sarthak.prof1991@gmail.com">Contact</a></nav></header>
@@ -33,12 +35,27 @@
       <p class="lede">The challenge in enterprise document AI is not producing text. It is producing structured data that is complete, evidence-backed, internally consistent, reviewable, and safe to use downstream.</p>
       <div class="role-strip"><span>Domain workflow design</span><span>Evaluation architecture</span><span>Full-stack delivery</span><span>Governed AI adoption</span></div>
     </section>
+    <section class="workflow-map" id="interactive-flow" data-workflow-map="ide" aria-labelledby="interactive-flow-title">
+      <div class="wm-intro"><p class="eyebrow">Interactive workflow</p><h2 id="interactive-flow-title">A quality path, with room for exceptions.</h2><p>Explore the described workflow as a schematic, not a live extraction tool: follow the checks, an illustrative recovery pass, or an unresolved exception that needs review.</p></div>
+      <p class="wm-fallback-note" data-map-fallback><a href="#workflow-title">Read the workflow stages below →</a><noscript> Interactive routes require JavaScript; the full narrative remains available.</noscript></p>
+      <div class="wm-app" data-map-body hidden></div>
+    </section>
     <section class="view-switch" aria-label="Case study detail level"><div><p class="eyebrow">Choose your view</p><h2>Built for executives and engineers.</h2></div><div class="switch-buttons" role="group" aria-label="Select a view"><button class="view-button active" data-view="executive" type="button">Executive view</button><button class="view-button" data-view="technical" type="button">Technical view</button></div></section>
     <section class="story-grid">
       <article><p class="eyebrow">The problem</p><h2>Decisions depend on data trapped in documents.</h2><p>In document-heavy workflows, critical information is distributed across complex files. Basic extraction can leave required fields missing, values unsupported, categories wrong, or financial relationships unreconciled.</p><p>A result can look polished and still be unsafe to use in analytics, operations, or AI-assisted decision workflows.</p></article>
       <aside class="principle-card"><p class="eyebrow">Design principle</p><p class="quote">“The system that extracts an answer should not be the only system that approves it.”</p><p>Trusted output needs an explicit quality contract, independent verification, recovery paths, and a human route for exceptions.</p></aside>
     </section>
-    <section class="workflow-section" aria-labelledby="workflow-title"><div class="section-heading"><p class="eyebrow">The operating model</p><h2 id="workflow-title">From source document to decision-ready data.</h2><p>Open a stage to see how the quality system works. The language changes with the selected view.</p></div><div class="pipeline" data-pipeline></div></section>
+    <section class="workflow-section" aria-labelledby="workflow-title"><div class="section-heading"><p class="eyebrow">The operating model</p><h2 id="workflow-title">From source document to decision-ready data.</h2><p>Open a stage to see how the quality system works. The language changes with the selected view.</p></div><div class="pipeline" data-pipeline></div>
+      <noscript><ol class="wm-fallback-stages">
+        <li><strong>Define the data contract</strong><p>Agree the required business fields, acceptable evidence, and escalation rules before extraction begins.</p></li>
+        <li><strong>Extract into a structured result</strong><p>Convert a complex document into a consistent, usable structure rather than a free-form summary.</p></li>
+        <li><strong>Verify independently</strong><p>A separate evaluation step checks whether important values are supported by source evidence.</p></li>
+        <li><strong>Reconcile deterministic relationships</strong><p>Apply repeatable business checks such as totals, subtotals, categories, and financial relationships.</p></li>
+        <li><strong>Recover only where needed</strong><p>Use targeted remediation when the system finds uncertainty or a correctable exception.</p></li>
+        <li><strong>Escalate disagreements safely</strong><p>When the system cannot resolve an issue reliably, use a stronger independent review or a human decision.</p></li>
+        <li><strong>Expose reviewable, downstream-ready data</strong><p>Make validated output usable for authorized workflows while retaining a path for human review.</p></li>
+      </ol></noscript>
+    </section>
     <section class="quality-section"><div class="section-heading"><p class="eyebrow">The quality contract</p><h2>One score is not enough.</h2></div><div class="quality-grid"><article><h3>Completeness</h3><p>Are the business fields expected from the approved data contract present and usable?</p></article><article><h3>Engineering accuracy</h3><p>Do extracted values pass independent evidence checks and deterministic business rules?</p></article><article><h3>Estimated quality</h3><p>What is the remaining signal after known errors are flagged? This is directional—not a replacement for ground-truth evaluation.</p></article></div></section>
     <section class="impact-section"><div class="impact-copy"><p class="eyebrow">Why this matters</p><h2>Extraction becomes enterprise data infrastructure.</h2><p>When outputs are structured, reviewable, and governed, document intelligence can support downstream analytics and AI-assisted workflows without treating an unverified model response as fact.</p></div><div class="impact-list"><div><strong>Domain-aware</strong><span>Designed around the fields and reconciliation logic that matter to the business.</span></div><div><strong>Evidence-led</strong><span>Checks values against source context rather than relying on confidence alone.</span></div><div><strong>Cost-conscious</strong><span>Uses stronger evaluation and recovery only where standard processing leaves uncertainty.</span></div><div><strong>Human-controlled</strong><span>Preserves review and escalation paths for exceptions and higher-risk decisions.</span></div></div></section>
     <section class="role-section"><div><p class="eyebrow">What I contributed</p><h2>Forward-deployed, end-to-end product engineering.</h2></div><div class="role-list"><p><strong>Business discovery:</strong> Partnered with domain stakeholders to turn document-analysis needs into workflow and data-contract decisions.</p><p><strong>Architecture and delivery:</strong> Contributed across user experience, AI integration, public interfaces, backend services, deployment, and operational controls.</p><p><strong>Quality engineering:</strong> Designed and advanced a multi-stage Doer/Checker approach for independent validation, deterministic reconciliation, bounded recovery, and reviewable outcomes.</p></div></section>
@@ -47,5 +64,7 @@
   </main>
   <footer><p>© <span data-year></span> Sarthak Banga</p><p>AI Engineering & Adoption Consultant</p></footer>
   <script src="../../scripts/site.js"></script><script src="case-study.js"></script>
+  <script src="../../scripts/workflow-map-data.js"></script>
+  <script src="../../scripts/workflow-map.js"></script>
 </body>
 </html>

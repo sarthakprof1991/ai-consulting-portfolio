@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="../../styles/global.css">
   <link rel="stylesheet" href="../ide-quality/case-study.css">
   <link rel="stylesheet" href="../../styles/case-study-additions.css">
+  <link rel="stylesheet" href="../../styles/workflow-map.css">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -35,6 +36,11 @@
       <p class="lede">Helping a lean engineering team support a document-AI product by turning debugging know-how into a guided workflow. The goal was not unrestricted autonomy, but eligible fixes that could be explained, independently checked, and made reviewable.</p>
       <div class="role-strip"><span>Remediation skill development</span><span>Engineering knowledge reuse</span><span>Independent verification</span><span>Business-rule boundaries</span></div>
       <nav class="chapter-links" aria-label="On this page"><a href="#change-boundary">Explore the change boundary</a><a href="#workflow">Follow the workflow</a><a href="#contribution">My contribution</a></nav>
+    </section>
+    <section class="workflow-map" id="interactive-flow" data-workflow-map="remediation" aria-labelledby="interactive-flow-title">
+      <div class="wm-intro"><p class="eyebrow">Interactive workflow</p><h2 id="interactive-flow-title">A fix has boundaries.</h2><p>Explore the described workflow as a schematic, not a live remediation tool: permitted fixes lead toward a reviewable change, while business-schema decisions stay outside that path.</p></div>
+      <p class="wm-fallback-note" data-map-fallback><a href="#workflow-title">Read the workflow stages below →</a><noscript> Interactive routes require JavaScript; the full narrative remains available.</noscript></p>
+      <div class="wm-app" data-map-body hidden></div>
     </section>
     <ol class="journey" aria-label="Remediation model at a glance"><li><span>01</span><strong>Reproduce the reported issue</strong></li><li><span>02</span><strong>Explain and check an eligible fix</strong></li><li><span>03</span><strong>Keep delivery reviewable</strong></li></ol>
     <section class="story-grid">
@@ -92,5 +98,7 @@
   <script src="../../scripts/site.js"></script>
   <script src="../../scripts/case-study-views.js"></script>
   <script src="../../scripts/remediation-boundaries.js"></script>
+  <script src="../../scripts/workflow-map-data.js"></script>
+  <script src="../../scripts/workflow-map.js"></script>
 </body>
 </html>
