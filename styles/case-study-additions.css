@@ -30,10 +30,25 @@ details.stage .stage-panel { display:block; }
 .related-studies a:hover { border-color:var(--teal); }
 .related-studies span { display:block; color:var(--muted); font-size:.8rem; margin-bottom:6px; }
 .related-studies strong { color:var(--teal); }
+.related-studies-three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.boundary-section { padding:70px 0; border-top:1px solid var(--line); }
+.boundary-section h2 { font-size:clamp(2rem,4vw,3.4rem); margin-bottom:22px; }
+.boundary-picker { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:22px; }
+.boundary-picker[hidden], .boundary-card[hidden] { display:none !important; }
+.boundary-button { border:1px solid var(--line); border-radius:999px; padding:12px 17px; background:var(--surface); color:var(--ink); font-weight:700; cursor:pointer; }
+.boundary-button.active, .boundary-button:hover { background:var(--teal); border-color:var(--teal); color:#fff; }
+.boundary-card { padding:28px; border:1px solid var(--line); border-left:4px solid var(--teal); background:var(--surface); border-radius:var(--radius); }
+.boundary-card:not([hidden]) + .boundary-card:not([hidden]) { margin-top:16px; }
+.boundary-card h3 { max-width:780px; font-size:1.5rem; line-height:1.2; }
+.boundary-card p:not(.eyebrow) { max-width:780px; color:var(--muted); }
+.boundary-card p:last-child { margin-bottom:0; }
+.boundary-card strong { color:var(--ink); }
 @media (max-width:760px) {
   .journey { grid-template-columns:1fr; }
   .journey li { display:flex; gap:16px; align-items:center; padding:14px 18px; }
   .journey span { margin-bottom:0; }
   .related-studies { grid-template-columns:1fr; }
   .case-hero h1 { overflow-wrap:break-word; }
+  .boundary-section { padding:52px 0; }
+  .boundary-card { padding:21px; }
 }

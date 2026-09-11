@@ -11,8 +11,9 @@ Open `index.html` in a browser, or serve the repository root with any static HTT
 - `case-studies/ide-quality/` — Intelligent Document Extraction: a generalized case study on structured extraction, independent verification, deterministic controls, bounded recovery, escalation, and human review.
 - `case-studies/governed-ai-exchange/`: Governed AI-to-Client Delivery. Reusable capability, internal review, and controlled external distribution.
 - `case-studies/microsoft-365-ai-integration/`: AI Integration for Microsoft 365. Identity-aware discovery, supported retrieval, and separate action capabilities. Recommended workflow safeguards are explicitly distinguished from connector-enforced behavior.
+- `case-studies/bounded-ai-remediation/`: Bounded AI-Assisted Remediation. A guided issue-to-fix workflow with permitted-change boundaries, source-based reproduction, independent checking, and reviewable delivery. Includes two invented examples that distinguish a technical investigation from a business-schema decision.
 
-The two additional case studies use native expandable sections and executive/technical workflow views. With JavaScript disabled, their executive narratives and expandable sections remain available. These are explanatory case studies, not live product demonstrations, and do not connect to workplace systems.
+Cases 02, 03, and 04 use native expandable sections and executive/technical workflow views. With JavaScript disabled, their executive narratives and expandable sections remain available. The remediation page's two illustrative boundary examples are also readable without JavaScript. These are explanatory case studies, not live product demonstrations, and do not connect to workplace systems.
 
 ## Site assets
 

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Bounded AI-Assisted Remediation</title>
+  <desc id="desc">Guided fixes, independent checks, explicit limits. A case study by Sarthak Banga.</desc>
+  <rect width="1200" height="630" fill="#102329"/>
+  <circle cx="1000" cy="120" r="290" fill="#087b7b" opacity=".35"/>
+  <circle cx="120" cy="600" r="340" fill="#087b7b" opacity=".18"/>
+  <text x="84" y="110" fill="#75d7d1" font-family="Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="4">AI-ASSISTED ENGINEERING OPERATIONS</text>
+  <text x="84" y="235" fill="#ffffff" font-family="Arial, sans-serif" font-size="78" font-weight="700">Bounded AI-Assisted</text>
+  <text x="84" y="330" fill="#ffffff" font-family="Arial, sans-serif" font-size="78" font-weight="700">Remediation</text>
+  <text x="84" y="480" fill="#d5e8e6" font-family="Arial, sans-serif" font-size="30">Guided fixes. Independent checks. Explicit limits.</text>
+  <text x="84" y="555" fill="#75d7d1" font-family="Arial, sans-serif" font-size="26" font-weight="700">SARTHAK BANGA · AI ENGINEERING &amp; ADOPTION CONSULTANT</text>
+</svg>
