@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A case study on connecting AI to authorized Microsoft 365 work through identity-aware discovery and controlled actions, by Sarthak Banga.">
+  <link rel="canonical" href="https://sarthakprof1991.github.io/ai-consulting-portfolio/case-studies/microsoft-365-ai-integration/">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Sarthak Banga | AI Engineering &amp; Adoption Consultant">
+  <meta property="og:title" content="AI Integration for Microsoft 365">
+  <meta property="og:description" content="Resolve the target. Retrieve authorized context. Keep consequential actions explicit. A case study by Sarthak Banga.">
+  <meta property="og:url" content="https://sarthakprof1991.github.io/ai-consulting-portfolio/case-studies/microsoft-365-ai-integration/">
+  <meta property="og:image" content="https://sarthakprof1991.github.io/ai-consulting-portfolio/assets/og-microsoft-365.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="AI Integration for Microsoft 365. Identity-aware discovery and controlled actions. Sarthak Banga.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AI Integration for Microsoft 365">
+  <meta name="twitter:description" content="Resolve the target. Retrieve authorized context. Keep consequential actions explicit. A case study by Sarthak Banga.">
+  <meta name="twitter:image" content="https://sarthakprof1991.github.io/ai-consulting-portfolio/assets/og-microsoft-365.png">
+  <meta name="twitter:image:alt" content="AI Integration for Microsoft 365. Identity-aware discovery and controlled actions. Sarthak Banga.">
+  <title>AI Integration for Microsoft 365 | Sarthak Banga</title>
+  <link rel="stylesheet" href="../../styles/global.css">
+  <link rel="stylesheet" href="../ide-quality/case-study.css">
+  <link rel="stylesheet" href="../../styles/case-study-additions.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header"><a class="brand" href="../../" aria-label="Sarthak Banga home">SB<span>.</span></a><nav aria-label="Primary navigation"><a href="../../#case-studies">Case studies</a><a href="mailto:sarthak.prof1991@gmail.com">Contact</a></nav></header>
+  <main id="main-content">
+    <section class="case-hero">
+      <p class="eyebrow">Case study 03 · Enterprise systems integration</p>
+      <h1>AI Integration for Microsoft 365.</h1>
+      <p class="lede">Connecting AI-assisted work to documents, communication, and collaboration. The important decisions are whose access applies, which resource the user means, and whether the next step is an answer or an action.</p>
+      <div class="role-strip"><span>Connector development</span><span>Workplace integration</span><span>Identity-aware workflows</span><span>Controlled actions</span></div>
+      <nav class="chapter-links" aria-label="On this page"><a href="#workflow">Explore the workflow</a><a href="#contribution">My contribution</a></nav>
+    </section>
+    <ol class="journey" aria-label="Integration model at a glance">
+      <li><span>01</span><strong>Resolve the intended target</strong></li>
+      <li><span>02</span><strong>Retrieve authorized context</strong></li>
+      <li><span>03</span><strong>Separate answers from actions</strong></li>
+    </ol>
+    <section class="story-grid">
+      <article><p class="eyebrow">The problem</p><h2>Useful AI needs context from real work.</h2><p>A request such as “find the document and prepare an update” crosses several boundaries. The assistant needs to identify the right file, understand the permitted context, and distinguish preparing content from changing something in a workplace system.</p><p>The connector brought Microsoft 365 capabilities into an AI-assisted workflow instead of asking the user to navigate the underlying integration details.</p></article>
+      <aside class="principle-card"><p class="eyebrow">Design principle</p><p class="quote">Resolve first. Read second. Act deliberately.</p><p>Natural language expresses intent, but it does not remove ambiguity or grant permission. Target selection and action boundaries deserve explicit treatment.</p></aside>
+    </section>
+    <section class="workflow-section" id="workflow" aria-labelledby="workflow-title">
+      <div class="section-heading"><p class="eyebrow">The operating pattern</p><h2 id="workflow-title">From a work request to a controlled next step.</h2><p>The connector supported identity context, discovery, retrieval, and separate action capabilities. The stages below combine those capabilities with recommended operating safeguards; they are not a claim that every safeguard is enforced by the connector itself.</p></div>
+      <div class="view-switch" data-view-switch hidden><div><p class="eyebrow">Choose your workflow view</p><h2>Business intent or integration decisions.</h2></div><div class="switch-buttons" role="group" aria-label="Select a workflow view"><button class="view-button active" data-view="executive" type="button" aria-pressed="true">Executive view</button><button class="view-button" data-view="technical" type="button" aria-pressed="false">Technical view</button></div></div>
+      <p class="reading-note" data-view-status role="status" aria-live="polite">Executive workflow view selected. Open stages remain open.</p>
+      <div class="pipeline">
+        <details class="stage"><summary class="stage-button"><span class="stage-index">01</span><span><span class="stage-title">Establish the working context</span><span class="stage-summary">Start with the user and the intended task.</span></span><span class="stage-symbol" aria-hidden="true">+</span></summary><div class="stage-panel">
+          <div data-audience="executive"><p>The integration supported identifying the signed-in user. That context matters when an assistant works with information from an existing workplace environment.</p><p><strong>Operating safeguard:</strong> A natural-language request should not be treated as permission to access everything in the organization.</p></div>
+          <div data-audience="technical" hidden><p>Identity context was part of the exposed capability model. It gives the workflow a starting point for understanding whose authorized environment is involved.</p><p><strong>Boundary:</strong> This public case does not describe permission configuration or assert a particular underlying authorization implementation.</p></div>
+        </div></details>
+        <details class="stage"><summary class="stage-button"><span class="stage-index">02</span><span><span class="stage-title">Resolve the intended target</span><span class="stage-summary">Turn a human reference into an unambiguous destination.</span></span><span class="stage-symbol" aria-hidden="true">+</span></summary><div class="stage-panel">
+          <div data-audience="executive"><p>The connector exposed discovery capabilities for people, workspaces, and content. These help connect a request about “the project folder” or “the team” to an actual resource.</p><p><strong>Operating safeguard:</strong> If more than one target fits, ask the user to choose before taking a consequential action.</p></div>
+          <div data-audience="technical" hidden><p>Resolution was distinct from retrieval and action. Separating these steps provides a place to handle ambiguous names before an operation is directed at a file, recipient, or workspace.</p><p><strong>Failure case to design for:</strong> A plausible match is not necessarily the intended target. Do not silently promote ambiguity into a write operation.</p></div>
+        </div></details>
+        <details class="stage"><summary class="stage-button"><span class="stage-index">03</span><span><span class="stage-title">Retrieve the relevant information</span><span class="stage-summary">Bring permitted workplace context into the task.</span></span><span class="stage-symbol" aria-hidden="true">+</span></summary><div class="stage-panel">
+          <div data-audience="executive"><p>Retrieval capabilities made supported workplace information available for AI-assisted reading and analysis. That includes working with content in the Microsoft 365 document and collaboration environment.</p><p><strong>Operating safeguard:</strong> Keep the retrieval focused on the task. Missing or inaccessible information should remain a visible limitation, not an invitation to invent an answer.</p></div>
+          <div data-audience="technical" hidden><p>The capability model separated finding a resource from reading its supported content. The integration provided a bridge from workplace resources to the context an assistant could use.</p><p><strong>Design consideration:</strong> Distinguish “not found,” “not accessible,” and “not supported” in the user experience rather than treating each as an empty result.</p></div>
+        </div></details>
+        <details class="stage"><summary class="stage-button"><span class="stage-index">04</span><span><span class="stage-title">Separate an answer from an action</span><span class="stage-summary">Understanding content does not authorize changing the system.</span></span><span class="stage-symbol" aria-hidden="true">+</span></summary><div class="stage-panel">
+          <div data-audience="executive"><p>The connector exposed action capabilities separately from discovery and reading. A request to summarize a file can end with an answer; a request to update or communicate something requires an additional decision.</p><p><strong>Operating safeguard:</strong> State the proposed action and its destination clearly. Preparing a draft should not be mistaken for sending it.</p></div>
+          <div data-audience="technical" hidden><p>The operation model distinguished reads from changes and other actions. This supports a workflow that can reason about a proposed change without performing it during discovery.</p><p><strong>Tradeoff:</strong> Flexible integration is useful, but an operation's technical availability is not equivalent to user authorization for a specific action.</p></div>
+        </div></details>
+        <details class="stage"><summary class="stage-button"><span class="stage-index">05</span><span><span class="stage-title">Review consequential changes</span><span class="stage-summary">Recommended safeguard: make the decision visible to the user.</span></span><span class="stage-symbol" aria-hidden="true">+</span></summary><div class="stage-panel">
+          <div data-audience="executive"><p>For consequential communications or modifications, the recommended workflow presents the recipient or destination and the exact proposed change for review. It should be easy to approve, correct, or stop.</p><p><strong>Important distinction:</strong> This is a recommended assistant-workflow safeguard, not a claim that the connector itself enforces a universal approval prompt.</p></div>
+          <div data-audience="technical" hidden><p>Approval belongs to the complete workflow, not to an assumption that every exposed action tool is safe to call. Review should refer to the actual target and payload the operation would use.</p><p><strong>Design consideration:</strong> If the target or proposed change changes after approval, obtain a decision on the revised action rather than reusing stale approval.</p></div>
+        </div></details>
+        <details class="stage"><summary class="stage-button"><span class="stage-index">06</span><span><span class="stage-title">Report the observed result</span><span class="stage-summary">Recommended safeguard: distinguish completion from an attempt.</span></span><span class="stage-symbol" aria-hidden="true">+</span></summary><div class="stage-panel">
+          <div data-audience="executive"><p>A useful workflow should say what actually happened: information retrieved, draft prepared, action completed, or a step blocked. The user should not have to infer success from a confident-sounding response.</p><p><strong>Operating safeguard:</strong> If the result is uncertain, say so and identify the next safe check rather than claiming completion.</p></div>
+          <div data-audience="technical" hidden><p>Action results should be interpreted separately from the assistant's plan. A successful request submission may not establish that every intended downstream effect occurred.</p><p><strong>Failure case to design for:</strong> An unclear response should not trigger an automatic repeat of a consequential action. Verify its state before retrying.</p></div>
+        </div></details>
+      </div>
+    </section>
+    <section class="quality-section"><div class="section-heading"><p class="eyebrow">Integration decisions</p><h2>Three boundaries worth making explicit.</h2><p>The capabilities provide a foundation. The surrounding workflow determines how carefully they are used.</p></div><div class="quality-grid"><article><h3>Identity and context</h3><p>Whose workplace context is in use, and what information is available for this task?</p></article><article><h3>Intent and target</h3><p>Which person, file, or workspace does the user actually mean, and what ambiguity remains?</p></article><article><h3>Reading and acting</h3><p>Is the assistant returning information, preparing something for review, or taking an explicitly authorized action?</p></article></div></section>
+    <section class="impact-section"><div class="impact-copy"><p class="eyebrow">Capability delivered</p><h2>An integration layer for everyday work.</h2><p>The connector brought discovery, supported content retrieval, and distinct action operations into an AI-accessible Microsoft 365 work layer. The public narrative focuses on that capability, not on unrestricted autonomous access.</p><p class="evidence-note">No adoption, time-saving, reliability, or business-impact figures are claimed. Workflow safeguards described above are recommendations unless explicitly identified as connector capabilities.</p></div><div class="impact-list"><div><strong>Documents</strong><span>Find and work with supported content in SharePoint and OneDrive.</span></div><div><strong>Collaboration</strong><span>Resolve people and collaboration destinations, including Teams.</span></div><div><strong>Communication</strong><span>Support Outlook-related workflows through separate discovery and action capabilities.</span></div><div><strong>Clear boundaries</strong><span>Distinguish understanding information from modifying or communicating it.</span></div></div></section>
+    <section class="role-section" id="contribution"><div><p class="eyebrow">What I contributed</p><h2>Built the Microsoft 365 AI integration.</h2></div><div class="role-list"><p><strong>Direct contribution:</strong> I built the connector that this case study abstracts.</p><p><strong>What this case demonstrates:</strong> Connecting AI-assisted work to existing workplace systems through an integration layer, rather than stopping at conversational output.</p><p><strong>Scope of attribution:</strong> This case does not claim sole ownership of the wider Microsoft 365 environment, or specific deployment, adoption, or business outcomes.</p></div></section>
+    <section class="closing"><p class="eyebrow">The consulting takeaway</p><h2>Connect AI to work, without blurring responsibility.</h2><p>Useful enterprise AI needs more than access to a tool. It needs the right context, an unambiguous target, and a deliberate boundary between recommending something and doing it.</p><a class="button" href="mailto:sarthak.prof1991@gmail.com">Discuss an AI integration challenge <span aria-hidden="true">→</span></a></section>
+    <p class="confidentiality">This is a generalized case study, not a live connector demonstration. Specific organizations, workplace data, internal tools, permissions, endpoints, identifiers, configurations, and confidential implementation details are intentionally omitted. Microsoft 365 product names identify the integration context, not sponsorship or endorsement.</p>
+    <nav class="related-studies" aria-label="Related case studies"><a href="../ide-quality/"><span>Case study 01 · Document intelligence</span><strong>Why “AI Extracted It” Is Not Good Enough →</strong></a><a href="../governed-ai-exchange/"><span>Case study 02 · Enterprise AI delivery</span><strong>Governed AI-to-Client Delivery →</strong></a></nav>
+  </main>
+  <footer><p>© <span data-year></span> Sarthak Banga</p><p>AI Engineering &amp; Adoption Consultant</p></footer>
+  <script src="../../scripts/site.js"></script>
+  <script src="../../scripts/case-study-views.js"></script>
+</body>
+</html>

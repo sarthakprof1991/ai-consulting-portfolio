@@ -1,0 +1,39 @@
+.skip-link { position:absolute; left:16px; top:-100px; z-index:2; padding:12px 18px; background:var(--ink); color:#fff; border-radius:8px; }
+.skip-link:focus { top:12px; }
+.case-hero h1 { font-size:clamp(2.6rem,6.5vw,5.25rem); line-height:1.02; }
+.story-grid article h2 { margin-bottom:24px; }
+.view-switch[hidden], [data-audience][hidden] { display:none !important; }
+.workflow-section .view-switch h2 { font-size:clamp(1.45rem,3vw,2.1rem); max-width:480px; }
+.reading-note { max-width:760px; color:var(--muted); font-size:.86rem; margin-top:20px; }
+.chapter-links { display:flex; flex-wrap:wrap; gap:12px 24px; margin-top:24px; }
+.chapter-links a { color:var(--teal); text-underline-offset:4px; font-size:.9rem; font-weight:700; }
+.journey { list-style:none; display:grid; grid-template-columns:repeat(3,1fr); gap:1px; padding:1px; margin:0 0 34px; background:var(--line); border-radius:var(--radius); overflow:hidden; }
+.journey li { background:var(--surface); padding:20px; }
+.journey span { display:block; color:var(--teal); font-family:ui-monospace,monospace; font-size:.8rem; margin-bottom:8px; }
+.journey strong { font-size:1rem; }
+details.stage > summary { list-style:none; cursor:pointer; }
+details.stage > summary::-webkit-details-marker { display:none; }
+details.stage > summary:focus-visible { outline:3px solid var(--teal); outline-offset:-4px; border-radius:14px; }
+details.stage[open] .stage-symbol { transform:rotate(45deg); }
+details.stage .stage-panel { display:block; }
+.stage-panel p + p { margin-top:16px; }
+.stage-panel h3 { font-size:.85rem; margin:20px 0 7px; color:var(--ink); }
+.stage-panel h3:first-child { margin-top:0; }
+.stage-panel ul { margin:8px 0 0; padding-left:20px; max-width:760px; }
+.stage-panel li { margin-bottom:8px; }
+.quality-section .section-heading p:last-child { margin-top:20px; }
+.impact-copy h2, .closing h2 { margin-bottom:24px; }
+.evidence-note { font-size:.84rem !important; border-left:3px solid var(--line); padding-left:16px; margin-top:24px; }
+.role-list p:last-child { margin-bottom:0; }
+.related-studies { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:48px 0; border-top:1px solid var(--line); }
+.related-studies a { padding:22px; border:1px solid var(--line); border-radius:var(--radius); text-decoration:none; background:var(--surface); }
+.related-studies a:hover { border-color:var(--teal); }
+.related-studies span { display:block; color:var(--muted); font-size:.8rem; margin-bottom:6px; }
+.related-studies strong { color:var(--teal); }
+@media (max-width:760px) {
+  .journey { grid-template-columns:1fr; }
+  .journey li { display:flex; gap:16px; align-items:center; padding:14px 18px; }
+  .journey span { margin-bottom:0; }
+  .related-studies { grid-template-columns:1fr; }
+  .case-hero h1 { overflow-wrap:break-word; }
+}

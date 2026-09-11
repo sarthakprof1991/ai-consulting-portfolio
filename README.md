@@ -9,8 +9,14 @@ Open `index.html` in a browser, or serve the repository root with any static HTT
 ## Case studies
 
 - `case-studies/ide-quality/` — Intelligent Document Extraction: a generalized case study on structured extraction, independent verification, deterministic controls, bounded recovery, escalation, and human review.
-- `case-studies/governed-ai-exchange/` — planned.
-- `case-studies/microsoft-365-ai-integration/` — planned.
+- `case-studies/governed-ai-exchange/`: Governed AI-to-Client Delivery. Reusable capability, internal review, and controlled external distribution.
+- `case-studies/microsoft-365-ai-integration/`: AI Integration for Microsoft 365. Identity-aware discovery, supported retrieval, and separate action capabilities. Recommended workflow safeguards are explicitly distinguished from connector-enforced behavior.
+
+The two additional case studies use native expandable sections and executive/technical workflow views. With JavaScript disabled, their executive narratives and expandable sections remain available. These are explanatory case studies, not live product demonstrations, and do not connect to workplace systems.
+
+## Site assets
+
+Each case study has its own social preview PNG and editable SVG, with canonical and social metadata. The new pages reuse the IDE page's base case-study stylesheet, with additive styles and a shared view-switch script. The original IDE narrative and controls are unchanged.
 
 ## Publishing guardrails
 
