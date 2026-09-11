@@ -205,6 +205,11 @@
     }
 
     function schedulePlayback() {
+      // Only the opt-in IDE 3D examples need longer object-demonstration dwell.
+      // All other maps, and the original IDE 2D map, retain the 4200ms cadence.
+      var dwell = sceneBridge && root.dataset.sceneMode === '3d'
+        ? Math.max(4200, Math.min(12000, Number(root.dataset.sceneDwell) || 4200))
+        : 4200;
       timer = window.setTimeout(function () {
         if (document.hidden || motion.matches || !state.playing) {
           stopPlayback();
@@ -215,7 +220,7 @@
         if (state.step === state.route.steps.length - 1) stopPlayback();
         renderState();
         if (state.playing) schedulePlayback();
-      }, 4200);
+      }, dwell);
     }
 
     function togglePlayback() {

@@ -5,7 +5,7 @@
   if (!root || root.dataset.mapReady !== 'true' || !window.WorkflowMapData) return;
   // A blocked enhancement stylesheet must never replace a working map.
   if (getComputedStyle(root).getPropertyValue('--ide-scene-styles').trim() !== 'ready') return;
-  var moduleURL = new URL('ide-workflow-scene.js?v=cinematic-2', document.currentScript.src).href;
+  var moduleURL = new URL('ide-workflow-scene.js?v=descriptive-1', document.currentScript.src).href;
   var diagram = root.querySelector('[data-map-diagram]');
   var surface = root.querySelector('.wm-surface');
   var compact = window.matchMedia('(max-width: 899px)');
@@ -48,8 +48,8 @@
     if (failed) note.textContent = '3D is unavailable in this browser. The complete 2D map and stage inspector remain available.';
     else if (pending && wanted === '3d') note.textContent = 'Loading the 3D scene. The 2D map stays available until it is ready.';
     else if (root.dataset.sceneMode === '3d') note.textContent = compact.matches
-      ? 'Cinematic 3D: choose a stage above to bring it forward. Overview shows the full workflow; scrolling stays on the page.'
-      : 'Move through the workflow in close-up. Focus stage brings the selected stage forward; Overview reveals every handoff.';
+      ? 'Choose a stage to watch its synthetic example. Replay or inspect Input, Action and Output below the scene. Page scrolling stays available.'
+      : 'Watch each stage transform an invented example. Focus stage shows the demonstration; Overview reveals every handoff.';
     else if (compact.matches && !explicitChoice) note.textContent = '2D is the default on smaller screens for readable labels. Choose 3D scene for cinematic stage close-ups and a full workflow overview.';
     else if (forcedColors.matches && !explicitChoice) note.textContent = '2D is the default in high-contrast mode. You can still choose the 3D scene.';
     else note.textContent = 'The complete 2D map. Switching views keeps your route, stage, and inspector detail level.';

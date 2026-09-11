@@ -21,7 +21,46 @@ const BOUNDS = Object.freeze({
   zoom: Object.freeze([0.88, 1.12])
 });
 const HOME = Object.freeze({ yaw: 0, elevation: 0, zoom: 1 });
-const TIMING = Object.freeze({ transition: 1500, camera: 600, packet: 1200 });
+const TIMING = Object.freeze({ transition: 1500, camera: 600, packet: 1200, demo: 4800, demoPhase: 1600 });
+// Presentation examples only: never replace route data, inspector prose, or
+// reported workflow outcomes. Every number below is deliberately invented.
+const EXAMPLES = Object.freeze({
+  contract: [
+    'Start with three required fields: A, B and total.',
+    'Fit each field to a numeric rule; attach the total = A + B control.',
+    'The contract is assembled before extraction begins.'
+  ],
+  extract: [
+    'Read the invented source: A 100, B 50, reported total 160.',
+    'Transfer each source value into its matching record field.',
+    'The record is populated, but these values are not yet verified.'
+  ],
+  verify: [
+    'Put the extracted values beside their source evidence.',
+    'Link A 100 to supporting evidence; inspect the unclear total separately.',
+    'A 100 is supported. Total 160 remains unresolved—not an automatic pass.'
+  ],
+  reconcile: [
+    'Compare the two line items with the reported total of 160.',
+    'Recompute 100 + 50 = 150, then compare 150 with 160.',
+    'The difference is 10. Flag the mismatch for a controlled next step.'
+  ],
+  recovery: [
+    'Keep A 100 and B 50 fixed; isolate only the flagged total.',
+    'Lift the total out for a targeted retry; 150 is only a candidate.',
+    'Send the candidate back to re-check. A correction is not yet accepted.'
+  ],
+  escalate: [
+    'Package the unresolved total together with its evidence.',
+    'Move that exception packet to a human reviewer.',
+    'The packet waits for a decision; the animation does not approve it.'
+  ],
+  output: [
+    'Bring together the record, its evidence and its quality state.',
+    'Bundle the three layers without dropping the review state.',
+    'The bundle retains quality and review state, including any exceptions—not a universal pass.'
+  ]
+});
 const COLORS = {
   paper: 0xe6ede2, paperSide: 0xb4c4bd, ink: 0x36565c, teal: 0x70cfc0,
   amber: 0xdcb479, base: 0x294851, current: 0x417e7b, visited: 0x285d5e
@@ -61,6 +100,13 @@ export function createDocumentQualityScene(options) {
   let compact = false;
   let lastHandoff = '';
   let drag = null;
+  let demoNode = null;
+  let demoStart = null;
+  let demoProgress = 1;
+  let demoPhase = 2;
+  let demoStatus = 'complete';
+  let demoPending = false;
+  let firstDemo = true;
   const stages = new Map();
   const edges = new Map();
 
@@ -126,11 +172,39 @@ export function createDocumentQualityScene(options) {
     const focusKind = element('p', 'ide-scene-focus-kind');
     const focusTitle = element('h3', 'ide-scene-focus-title');
     focusTitle.dataset.sceneFocusTitle = '';
-    const focusHint = element('p', 'ide-scene-focus-hint', 'Select a stage or use Next to move through the workflow.');
+    const focusHint = element('p', 'ide-scene-focus-hint', 'Synthetic example · invented values, not a route result.');
     focusCaption.append(focusKind, focusTitle, focusHint);
     const labels = element('ol', 'ide-scene-labels');
     labels.setAttribute('aria-label', '3D workflow stages; choose a stage to inspect');
-    frame.append(canvas, caption, focusCaption, labels);
+    const objectLabels = element('div', 'ide-demo-object-labels');
+    objectLabels.setAttribute('aria-hidden', 'true');
+    frame.append(canvas, caption, focusCaption, labels, objectLabels);
+    const demoPanel = element('section', 'ide-demo-panel');
+    demoPanel.setAttribute('aria-label', 'Synthetic stage demonstration');
+    const demoToolbar = element('div', 'ide-demo-toolbar');
+    const demoEyebrow = element('p', 'ide-demo-eyebrow', 'Invented example · explains this stage, not the selected route’s outcome.');
+    const replay = element('button', 'ide-demo-replay', 'Replay stage');
+    replay.type = 'button';
+    replay.dataset.sceneDemoReplay = '';
+    const demoPhases = element('div', 'ide-demo-phases');
+    demoPhases.setAttribute('role', 'group');
+    demoPhases.setAttribute('aria-label', 'Inspect a demonstration phase');
+    ['Input', 'Action', 'Output'].forEach((name, index) => {
+      const button = element('button', '', `${index + 1} · ${name}`);
+      button.type = 'button';
+      button.dataset.sceneDemoPhase = index;
+      demoPhases.append(button);
+    });
+    demoToolbar.append(demoEyebrow, demoPhases, replay);
+    const demoCaption = element('p', 'ide-demo-action');
+    demoCaption.dataset.sceneDemoCaption = '';
+    demoCaption.setAttribute('role', 'status');
+    demoCaption.setAttribute('aria-live', 'polite');
+    const demoTrack = element('div', 'ide-demo-progress');
+    demoTrack.setAttribute('aria-hidden', 'true');
+    const demoFill = element('span', '');
+    demoTrack.append(demoFill);
+    demoPanel.append(demoToolbar, demoCaption, demoTrack);
     const footer = element('div', 'ide-scene-footer');
     const cameraButtons = element('div', 'ide-scene-camera');
     cameraButtons.setAttribute('role', 'group');
@@ -156,7 +230,7 @@ export function createDocumentQualityScene(options) {
     picker.dataset.scenePicker = '';
     picker.setAttribute('aria-labelledby', pickerTitle.id);
     pickerWrap.append(pickerTitle, picker);
-    mount.append(walkthrough, perspectiveBar, pickerWrap, frame, footer);
+    mount.append(walkthrough, perspectiveBar, pickerWrap, frame, demoPanel, footer);
 
     renderer = new THREE.WebGLRenderer({
       canvas, antialias: true, alpha: false, powerPreference: 'low-power'
@@ -347,6 +421,249 @@ export function createDocumentQualityScene(options) {
       }
     }
 
+    const textMaterials = new Map();
+    function textFace(group, text, w, h, x = 0, y = 0, z = 0.075, color = '#173c42') {
+      const key = color + ':' + text;
+      if (!textMaterials.has(key)) {
+        const sheet = document.createElement('canvas');
+        sheet.width = 512;
+        sheet.height = 160;
+        const context = sheet.getContext('2d');
+        if (!context) throw new Error('Illustrative text unavailable');
+        context.clearRect(0, 0, sheet.width, sheet.height);
+        context.fillStyle = color;
+        context.font = '700 76px sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(text, 256, 84, 478);
+        const texture = track(new THREE.CanvasTexture(sheet));
+        texture.colorSpace = THREE.SRGBColorSpace;
+        textMaterials.set(key, track(new THREE.MeshBasicMaterial({
+          map: texture, transparent: true, depthWrite: false,
+          polygonOffset: true, polygonOffsetFactor: -1
+        })));
+      }
+      return mesh(group, new THREE.PlaneGeometry(w, h), textMaterials.get(key), x, y, z);
+    }
+    function token(group, text, x, y, z, mat = paleTeal, w = 0.9, h = 0.34) {
+      const item = new THREE.Group();
+      item.position.set(x, y, z);
+      group.add(item);
+      box(item, w, h, 0.12, mat, 0, 0, 0, true);
+      textFace(item, text, w * 0.92, h * 0.9);
+      return item;
+    }
+    function exampleSheet(group, x, z = 0) {
+      const sheet = new THREE.Group();
+      sheet.position.set(x, 1.22, z);
+      group.add(sheet);
+      box(sheet, 1.28, 1.66, 0.11, paper, 0, 0, 0, true);
+      box(sheet, 1.1, 0.1, 0.045, teal, 0, 0.69, 0.082);
+      // Visible folded corner and side sheets give the demonstrations tangible
+      // document depth rather than flat UI panels floating over the scene.
+      box(sheet, 1.28, 1.66, 0.06, paperSide, -0.055, -0.035, -0.1, true);
+      return sheet;
+    }
+    function lerpPosition(object, a, b, p, arc = 0) {
+      object.position.set(
+        THREE.MathUtils.lerp(a[0], b[0], p),
+        THREE.MathUtils.lerp(a[1], b[1], p) + Math.sin(Math.PI * p) * arc,
+        THREE.MathUtils.lerp(a[2], b[2], p)
+      );
+    }
+    function demoArrow(group, a, b, mat = teal) {
+      const arrow = new THREE.Group();
+      group.add(arrow);
+      rod(arrow, a, b, 0.035, mat);
+      const end = new THREE.Vector3(...b);
+      const direction = end.clone().sub(new THREE.Vector3(...a)).normalize();
+      const tip = mesh(arrow, new THREE.ConeGeometry(0.11, 0.2, 3), mat);
+      tip.position.copy(end);
+      tip.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      return arrow;
+    }
+    function buildDemo(id, parent) {
+      const group = new THREE.Group();
+      group.visible = false;
+      parent.add(group);
+      const localLabels = [];
+      function label(text, x, y, z, tone = 'neutral') {
+        const item = element('span', 'ide-demo-object-label', text);
+        item.dataset.tone = tone;
+        item.dataset.demoObject = id;
+        objectLabels.append(item);
+        localLabels.push({ item, position: new THREE.Vector3(x, y, z) });
+      }
+      let update;
+      if (id === 'contract') {
+        exampleSheet(group, 0, -0.12);
+        const fields = ['A', 'B', 'Total'].map((text, i) =>
+          token(group, text + ' : #', -1.12, 1.7 - i * 0.47, 0.3, paleTeal, 1.08, 0.36));
+        const rule = token(group, 'Total = A + B', 0, 0.51, 0.57, amber, 2.08, 0.31);
+        const clasp = box(group, 0.38, 0.12, 0.25, teal, 0, 2.1, -0.1, true);
+        label('Required · number', -0.85, 2.23, 0.1);
+        label('Output · contract', 0.85, 2.23, 0.1);
+        update = (a, b, c) => {
+          fields.forEach((field, i) => {
+            const q = cinematicEase(clamp(b * 1.65 - i * 0.24, 0, 1));
+            lerpPosition(field, [-1.12, 1.7 - i * 0.47, 0.3], [0, 1.7 - i * 0.47, 0.15], q, 0.25);
+            field.rotation.z = (1 - q) * -0.12;
+          });
+          rule.visible = b > 0.35;
+          rule.scale.setScalar(Math.max(0.001, c));
+          clasp.position.y = 2.45 - c * 0.35;
+        };
+      } else if (id === 'extract') {
+        const source = exampleSheet(group, -0.81, -0.12);
+        const record = exampleSheet(group, 0.81, 0.08);
+        const values = ['A 100', 'B 50', 'T 160'];
+        values.forEach((text, i) => textFace(source, text, 1.06, 0.3, 0, 0.35 - i * 0.43, 0.073));
+        const fields = values.map((text, i) => token(group, text, -0.81, 1.57 - i * 0.43, 0.11, i === 2 ? amber : paleTeal, 1.05, 0.34));
+        for (let i = 0; i < 3; i += 1) box(record, 1.08, 0.34, 0.03, dark, 0, 0.35 - i * 0.43, 0.071);
+        const arrow = demoArrow(group, [-0.52, 0.49, 0.6], [0.58, 0.49, 0.6]);
+        label('Input · source sheet', -0.82, 2.23, 0);
+        label('Output · record', 0.82, 2.23, 0.15);
+        update = (a, b, c) => {
+          fields.forEach((field, i) => {
+            const q = cinematicEase(clamp(b * 1.8 - i * 0.36, 0, 1));
+            field.visible = b > 0 || c > 0;
+            lerpPosition(field, [-0.81, 1.57 - i * 0.43, 0.11], [0.81, 1.57 - i * 0.43, 0.28], q, 0.44);
+            field.rotation.y = Math.sin(q * Math.PI) * -0.5;
+          });
+          arrow.visible = b > 0 && c < 1;
+        };
+      } else if (id === 'verify') {
+        const source = exampleSheet(group, -0.82, -0.1);
+        textFace(source, 'A 100', 1.06, 0.31, 0, 0.29, 0.075);
+        textFace(source, 'T 160 ?', 1.06, 0.31, 0, -0.27, 0.075);
+        token(group, 'A 100', 0.86, 1.51, 0.1, paleTeal, 0.96);
+        token(group, 'T 160 ?', 0.86, 0.96, 0.1, amber, 0.96);
+        const lens = new THREE.Group();
+        group.add(lens);
+        mesh(lens, new THREE.TorusGeometry(0.35, 0.048, 10, 32), teal);
+        rod(lens, [0.22, -0.26, 0], [0.44, -0.53, 0], 0.055, dark);
+        const supported = demoArrow(group, [-0.2, 1.51, 0.25], [0.29, 1.51, 0.25]);
+        const uncertain = demoArrow(group, [-0.2, 0.95, 0.25], [0.29, 0.95, 0.25], amber);
+        const yes = token(group, 'Supported', 0.85, 1.96, 0.26, paleTeal, 1.18, 0.26);
+        const no = token(group, 'Unresolved', 0.79, 0.51, 0.35, amber, 1.3, 0.26);
+        label('Input · evidence', -0.85, 2.25, 0);
+        label('Output · field status', 0.85, 2.25, 0.1);
+        update = (a, b, c) => {
+          lens.position.set(-0.82 + Math.sin(b * Math.PI) * 0.2, 1.51 - b * 0.56, 0.32);
+          supported.visible = b > 0.1;
+          uncertain.visible = b > 0.6;
+          yes.visible = b > 0.25;
+          no.visible = c > 0;
+        };
+      } else if (id === 'reconcile') {
+        cylinder(group, 0.13, 0.26, 0.95, paperSide, 0, 0.88, 0, true);
+        const balance = new THREE.Group();
+        balance.position.set(0, 1.32, 0);
+        group.add(balance);
+        box(balance, 2.5, 0.1, 0.2, amber, 0, 0, 0, true);
+        for (const x of [-0.9, 0.9]) {
+          cylinder(balance, 0.48, 0.4, 0.11, dark, x, -0.26, 0.02, true);
+          rod(balance, [x, 0, 0], [x, -0.24, 0], 0.025, amber);
+        }
+        const aValue = token(group, '100', -1.1, 1.88, 0.23, paleTeal, 0.78, 0.4);
+        const bValue = token(group, '+ 50', -0.52, 1.51, 0.36, paleTeal, 0.8, 0.37);
+        const sum = token(group, '150', -0.9, 1.74, 0.23, paleTeal, 1.06, 0.43);
+        const reported = token(group, '160', 0.91, 1.74, 0.23, amber, 1.06, 0.43);
+        const mismatch = token(group, '150 ≠ 160', 0, 0.66, 0.61, amber, 1.93, 0.38);
+        const difference = token(group, 'Difference 10', 0, 0.44, 1.14, amber, 2.02, 0.3);
+        label('Input · 100 + 50', -0.86, 2.29, 0);
+        label('Compare · total 160', 0.86, 2.29, 0);
+        update = (a, b, c) => {
+          lerpPosition(aValue, [-1.1, 1.88, 0.23], [-0.9, 1.7, 0.23], b);
+          lerpPosition(bValue, [-0.52, 1.51, 0.36], [-0.9, 1.7, 0.23], b);
+          aValue.visible = b < 0.7;
+          bValue.visible = b < 0.7;
+          sum.visible = b >= 0.7;
+          balance.rotation.z = -c * 0.14;
+          sum.position.y = 1.74 + c * 0.13;
+          reported.position.y = 1.74 - c * 0.13;
+          mismatch.visible = c > 0;
+          difference.visible = c > 0.45;
+        };
+      } else if (id === 'recovery') {
+        exampleSheet(group, -0.82, -0.12);
+        token(group, 'A 100', -0.82, 1.64, 0.08, paleTeal, 1.07);
+        token(group, 'B 50', -0.82, 1.19, 0.08, paleTeal, 1.07);
+        const flagged = token(group, 'T 160', -0.82, 0.74, 0.12, amber, 1.07);
+        const candidate = token(group, '150 ?', 0.67, 1.21, 0.25, amber, 1.12, 0.42);
+        const lens = mesh(group, new THREE.TorusGeometry(0.43, 0.05, 10, 32), teal, 0.83, 1.67, 0.12);
+        rod(group, [1.1, 1.33, 0.12], [1.33, 1.03, 0.12], 0.055, dark);
+        const back = demoArrow(group, [0.63, 0.62, 0.43], [0.89, 1.1, 0.43], amber);
+        const pending = token(group, 'Re-check', 0.79, 0.49, 0.56, amber, 1.23, 0.3);
+        label('Input · one flagged field', -0.84, 2.24, 0);
+        label('Output · candidate only', 0.84, 2.24, 0);
+        update = (a, b, c) => {
+          lerpPosition(flagged, [-0.82, 0.74, 0.12], [0.67, 1.21, 0.25], b, 0.62);
+          flagged.visible = b < 0.88;
+          candidate.visible = b >= 0.88;
+          lerpPosition(candidate, [0.67, 1.21, 0.25], [0.83, 1.67, 0.25], c, 0.22);
+          lens.rotation.z = 0;
+          back.visible = c > 0 && c < 1;
+          pending.visible = c > 0.3;
+        };
+      } else if (id === 'escalate') {
+        const packet = new THREE.Group();
+        group.add(packet);
+        box(packet, 1.02, 1.25, 0.14, paper, 0, 0, 0, true);
+        box(packet, 1.02, 1.25, 0.1, paperSide, -0.07, 0.08, -0.13, true);
+        token(packet, 'T 160 ?', 0, 0.18, 0.16, amber, 0.95);
+        textFace(packet, 'Evidence', 0.91, 0.3, 0, -0.32, 0.085);
+        const desk = box(group, 1.5, 0.15, 0.82, dark, 0.7, 0.73, 0.05, true);
+        const reviewer = new THREE.Group();
+        reviewer.position.y = 0.25;
+        group.add(reviewer);
+        person(reviewer, 1.16, -0.08, paleTeal);
+        const gate = token(group, 'Await decision', 0, 0.5, 1.04, amber, 2.06, 0.32);
+        const arrow = demoArrow(group, [-0.72, 0.46, 0.56], [0.72, 0.46, 0.56], amber);
+        label('Input · exception packet', -0.82, 2.28, 0);
+        label('Output · human review', 0.84, 2.28, 0);
+        update = (a, b, c) => {
+          lerpPosition(packet, [-0.92, 1.28, 0.18], [0.25, 1.2, 0.5], b, 0.55);
+          packet.rotation.y = b * -0.2;
+          packet.rotation.x = c * -0.4;
+          gate.visible = c > 0;
+          arrow.visible = b > 0 && c < 1;
+          desk.scale.set(1, 1, 1);
+        };
+      } else if (id === 'output') {
+        box(group, 2.5, 0.18, 1.5, dark, 0, 0.41, 0.15, true);
+        const sheets = ['Record', 'Evidence', 'Quality state'].map((text, i) => {
+          const sheet = new THREE.Group();
+          group.add(sheet);
+          box(sheet, 1.39, 1.47, 0.09, i === 2 ? paleTeal : paper, 0, 0, 0, true);
+          textFace(sheet, text, 1.23, 0.34, 0, 0.37, 0.069);
+          box(sheet, 1.05, 0.035, 0.025, ink, 0, -0.06, 0.065);
+          box(sheet, 0.78, 0.035, 0.025, ink, -0.14, -0.29, 0.065);
+          return sheet;
+        });
+        const exception = token(group, 'Review state', 0, 0.8, 0.89, amber, 2.07, 0.36);
+        const band = box(group, 2.17, 0.13, 0.11, teal, 0, 0.49, 0.95, true);
+        label('Input · three layers', -0.85, 2.78, 0);
+        label('Output · reviewable bundle', 0.85, 2.78, 0);
+        update = (a, b, c) => {
+          sheets.forEach((sheet, i) => {
+            lerpPosition(sheet, [-0.96 + i * 0.96, 1.65 + i * 0.12, -0.8 + i * 0.65],
+              [-0.86 + i * 0.86, 1.9 - i * 0.48, -0.16 + i * 0.21], b, 0.2);
+            sheet.rotation.y = (1 - b) * (i - 1) * 0.18;
+            sheet.scale.setScalar(1 - b * 0.22);
+          });
+          exception.visible = c > 0;
+          band.scale.x = Math.max(0.001, c);
+        };
+      }
+      function sample(progress) {
+        const t = progress * 3;
+        update(cinematicEase(clamp(t, 0, 1)), cinematicEase(clamp(t - 1, 0, 1)), cinematicEase(clamp(t - 2, 0, 1)));
+      }
+      sample(1);
+      return { group, labels: localLabels, sample };
+    }
+
     const ground = material(0x0c222c, { roughness: 0.94, metalness: 0 });
     box(world, 200, 0.1, 200, ground, 0, -0.83, 0);
     const board = new THREE.Group();
@@ -401,7 +718,9 @@ export function createDocumentQualityScene(options) {
         const marker = box(group, 0.16, 0.025, 0.16, amber, -1.32, 0.32, 0.75);
         marker.rotation.y = Math.PI / 4;
       }
-      buildObject(node.id, group);
+      const illustration = new THREE.Group();
+      group.add(illustration);
+      buildObject(node.id, illustration);
       // Each station owns its object finishes so the foreground can separate
       // from the receding world without hiding or removing any workflow node.
       const finishes = new Map();
@@ -415,6 +734,7 @@ export function createDocumentQualityScene(options) {
       });
       stages.set(node.id, {
         group, stageMaterial, railMaterial, finishes: [...finishes.values()], exposure: 1,
+        illustration, demo: buildDemo(node.id, group),
         label: createLabel(node, false), picker: createLabel(node, true), node
       });
     });
@@ -471,10 +791,100 @@ export function createDocumentQualityScene(options) {
     world.add(packetObject);
     packetObject.visible = false;
 
+    function updateDemoUI() {
+      if (!state) return;
+      const description = EXAMPLES[demoNode || state.node];
+      const text = focusMode === 'overview'
+        ? 'Overview shows route connections. Choose Focus stage to watch the synthetic example.'
+        : demoPending ? 'Moving to the selected stage; its three-part example starts when the camera settles.'
+          : description[demoPhase];
+      if (demoCaption.textContent !== text) demoCaption.textContent = text;
+      demoPhases.querySelectorAll('button').forEach(button => {
+        const current = Number(button.dataset.sceneDemoPhase) === demoPhase;
+        button.setAttribute('aria-pressed', String(current));
+        button.disabled = focusMode !== 'focus';
+      });
+      replay.disabled = reduced || focusMode !== 'focus';
+      replay.textContent = reduced ? 'Static example' : 'Replay stage';
+      demoFill.style.transform = `scaleX(${demoProgress})`;
+      root.dataset.sceneDemoNode = demoNode || state.node;
+      root.dataset.sceneDemoPhase = ['input', 'action', 'output'][demoPhase];
+      root.dataset.sceneDemoProgress = demoProgress.toFixed(3);
+      root.dataset.sceneDemoStatus = demoStatus;
+    }
+    function renderDemoObjects() {
+      if (!state) return;
+      stages.forEach((stage, id) => {
+        const selected = focusMode === 'focus' && id === state.node;
+        stage.demo.group.visible = selected;
+        stage.illustration.visible = !selected;
+        if (selected) stage.demo.sample(demoProgress);
+        stage.demo.labels.forEach(label => {
+          label.item.hidden = !selected || Boolean(transition);
+        });
+      });
+      renderer.shadowMap.needsUpdate = true;
+      updateDemoUI();
+    }
+    function finishDemo() {
+      demoNode = state?.node || demoNode;
+      demoStart = null;
+      demoPending = false;
+      demoProgress = 1;
+      demoPhase = 2;
+      demoStatus = reduced ? 'static' : 'complete';
+      renderDemoObjects();
+    }
+    function prepareDemo() {
+      demoNode = state.node;
+      demoStart = null;
+      const animate = active && visible && !document.hidden && !reduced && focusMode === 'focus';
+      demoPending = animate;
+      demoProgress = animate ? 0 : 1;
+      demoPhase = animate ? 0 : 2;
+      demoStatus = animate ? 'waiting' : reduced ? 'static' : 'complete';
+      renderDemoObjects();
+      queueFrame();
+    }
+    function sampleDemo(now) {
+      if (demoPending && !transition) {
+        demoStart = now;
+        demoPending = false;
+        demoStatus = 'running';
+      }
+      if (demoStart !== null) {
+        demoProgress = clamp((now - demoStart) / TIMING.demo, 0, 1);
+        demoPhase = Math.min(2, Math.floor(demoProgress * 3));
+        if (demoProgress === 1) { demoStart = null; demoStatus = 'complete'; }
+        renderDemoObjects();
+      }
+    }
+    function placeDemoLabels() {
+      if (!state || focusMode !== 'focus' || transition) return;
+      const stage = stages.get(state.node);
+      stage.group.updateWorldMatrix(true, false);
+      const points = stage.demo.labels.map(label => {
+        const anchor = stage.group.localToWorld(label.position.clone());
+        return { ...label, screen: screenPoint(anchor.x, anchor.y, anchor.z) };
+      }).sort((a, b) => a.screen.x - b.screen.x);
+      const labelWidth = Math.min(154, (width - 36) / 2);
+      // Two named anchors per demonstration. Resolve horizontally at all camera
+      // offsets; names stay readable rather than inheriting 3D text foreshortening.
+      let previousRight = 8;
+      points.forEach((label, i) => {
+        const remaining = (points.length - i) * (labelWidth + 8);
+        const x = clamp(label.screen.x - labelWidth / 2, previousRight, width - remaining);
+        label.item.style.width = labelWidth + 'px';
+        const y = clamp(label.screen.y - label.item.offsetHeight - 14, width < 900 ? 116 : 66, height - 70);
+        label.item.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+        previousRight = x + labelWidth + 8;
+      });
+    }
+
     function syncDiagnostics() {
       root.dataset.sceneNode = state ? state.node : '';
       root.dataset.sceneActive = String(active && visible && !document.hidden && !disposed);
-      root.dataset.sceneAnimating = String(Boolean(active && visible && !document.hidden && (transition || packet)));
+      root.dataset.sceneAnimating = String(Boolean(active && visible && !document.hidden && (transition || packet || demoStart !== null || demoPending)));
       root.dataset.scenePacket = String(Boolean(packet && packetObject.visible));
       root.dataset.sceneHandoff = lastHandoff;
       root.dataset.sceneCameraYaw = cameraState.yaw.toFixed(2);
@@ -504,6 +914,13 @@ export function createDocumentQualityScene(options) {
           elevation: cameraPose.elevation, focus: cameraPose.focus, fov: camera.fov
         }),
         transitionProgress, transitionDirection,
+        demoNode, demoPhase: ['input', 'action', 'output'][demoPhase],
+        demoPhaseIndex: demoPhase, demoProgress, demoStatus, demoPending,
+        demoActive: demoStart !== null,
+        demoObjectPositions: Object.freeze(Object.fromEntries([...stages].map(([id, stage]) => [
+          id, Object.freeze(stage.demo.group.children.filter(item => item.isGroup).map(item =>
+            Object.freeze(item.position.toArray())))
+        ]))),
         stageTransforms: Object.freeze(Object.fromEntries([...stages].map(([id, stage]) => [id, Object.freeze({
           position: Object.freeze(stage.group.position.toArray()),
           rotation: Object.freeze([stage.group.rotation.x, stage.group.rotation.y, stage.group.rotation.z]),
@@ -650,6 +1067,7 @@ export function createDocumentQualityScene(options) {
     }
     function beginTransition(direction = 1, choreograph = true) {
       sampleTransition(performance.now());
+      finishDemo();
       transitionDirection = direction;
       if (reduced || !active || !visible || document.hidden) { settle(); return; }
       transition = {
@@ -674,6 +1092,7 @@ export function createDocumentQualityScene(options) {
         cameraPose = desiredPose();
         stages.forEach(stage => applyStage(stage, desiredStage(stage)));
         applyCamera();
+        finishDemo();
       }
       edges.forEach(edge => { edge.highlight.visible = false; });
       renderer.shadowMap.needsUpdate = true;
@@ -693,7 +1112,10 @@ export function createDocumentQualityScene(options) {
       if (next === visible) return;
       visible = next;
       if (!visible) { cancelFrame(); settle(); }
-      else queueFrame();
+      else {
+        if (active && firstDemo) { firstDemo = false; prepareDemo(); }
+        queueFrame();
+      }
       syncDiagnostics();
     }
     function queueFrame() {
@@ -705,6 +1127,7 @@ export function createDocumentQualityScene(options) {
       if (disposed || !active || !visible || document.hidden) return;
       try {
         sampleTransition(now);
+        sampleDemo(now);
         if (packet) {
           const t = clamp((now - packet.start) / TIMING.packet, 0, 1);
           const edge = edges.get(packet.edge);
@@ -722,10 +1145,12 @@ export function createDocumentQualityScene(options) {
         }
         applyCamera();
         placeLabels();
+        renderDemoObjects();
+        placeDemoLabels();
         renderer.render(world, camera);
         renderCount += 1;
         syncDiagnostics();
-        if (transition || packet) queueFrame();
+        if (transition || packet || demoStart !== null || demoPending) queueFrame();
       } catch (error) { onError(error); }
     }
     function resize() {
@@ -741,6 +1166,7 @@ export function createDocumentQualityScene(options) {
       if (!transition && state) cameraPose = desiredPose();
       applyCamera();
       placeLabels();
+      placeDemoLabels();
       queueFrame();
     }
     function setState(next) {
@@ -774,6 +1200,10 @@ export function createDocumentQualityScene(options) {
           : Math.sign(stages.get(state.node).node.source - stages.get(previous.node).node.source) || 1;
         beginTransition(direction);
       } else if (!previous || !canAnimate) settle();
+      if (moved || occurrenceChanged || routeChanged) {
+        firstDemo = false;
+        prepareDemo();
+      } else if (previous && !previous.playing && state.playing && canAnimate) prepareDemo();
       const focused = stages.get(state.node).node;
       focusKind.textContent = 'Stage ' + String(focused.source + 1).padStart(2, '0') + ' / ' + focused.kind;
       focusTitle.textContent = focused.label;
@@ -827,6 +1257,7 @@ export function createDocumentQualityScene(options) {
         settle();
       } else {
         resize();
+        if (firstDemo && visible) { firstDemo = false; prepareDemo(); }
         queueFrame();
       }
       syncDiagnostics();
@@ -868,7 +1299,26 @@ export function createDocumentQualityScene(options) {
       sampleTransition(performance.now());
       focusMode = button.dataset.sceneView;
       beginTransition(focusMode === 'focus' ? 1 : -1);
+      if (focusMode === 'focus') prepareDemo();
+      else finishDemo();
       placeLabels();
+    });
+    listen(replay, 'click', () => {
+      if (replay.disabled) return;
+      options.onPause();
+      settle();
+      prepareDemo();
+    });
+    listen(demoPhases, 'click', event => {
+      const button = event.target.closest('[data-scene-demo-phase]');
+      if (!button || button.disabled) return;
+      options.onPause();
+      settle();
+      demoPhase = Number(button.dataset.sceneDemoPhase);
+      demoProgress = (demoPhase + 1) / 3;
+      demoStatus = reduced ? 'static' : 'inspecting';
+      renderDemoObjects();
+      queueFrame();
     });
     const raycaster = new THREE.Raycaster();
     listen(canvas, 'pointerdown', event => {
